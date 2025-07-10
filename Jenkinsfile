@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven'
-        jdk 'JDK17'
-    }
-
     environment {
         SONAR_TOKEN = credentials('sonarqube-token')
     }
@@ -37,3 +32,4 @@ pipeline {
         }
     }
 }
+
