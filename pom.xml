@@ -18,18 +18,16 @@
 
     <properties>
         <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <dependencies>
-        <!-- Spring Boot Starter Web (inclut @Service, spring-context...) -->
+        <!-- Spring Boot Starter Web inclut spring-context avec @Service -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Boot Starter Test (JUnit 5, Mockito...) -->
+        <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -45,36 +43,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
-            </plugin>
-
-            <!-- JaCoCo pour la couverture de test -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Maven Deploy Plugin -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>3.1.0</version>
             </plugin>
         </plugins>
     </build>
