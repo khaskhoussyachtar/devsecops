@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd ">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -23,13 +23,13 @@
     </properties>
 
     <dependencies>
-        <!-- Spring Boot Starter Web -->
+        <!-- Spring Boot Starter Web (inclut @Service, spring-context...) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Boot Starter Test -->
+        <!-- Spring Boot Starter Test (JUnit 5, Mockito...) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -50,7 +50,7 @@
                 </configuration>
             </plugin>
 
-            <!-- JaCoCo Plugin -->
+            <!-- JaCoCo pour la couverture de test -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -73,7 +73,6 @@
 
             <!-- Maven Deploy Plugin -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>3.1.0</version>
             </plugin>
