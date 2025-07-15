@@ -8,6 +8,8 @@ pipeline {
 
     environment {
         SONAR_TOKEN = credentials('sonarqube-token')
+        NEXUS_USER = credentials('nexus-username')    // Jenkins credential with your Nexus username
+        NEXUS_PASS = credentials('nexus-password')    // Jenkins credential with your Nexus password
     }
 
     stages {
@@ -19,7 +21,6 @@ pipeline {
 
         stage('Build and Test') {
             steps {
-                // Compile + test + generate report Jacoco
                 sh 'mvn clean verify'
             }
         }
@@ -41,7 +42,28 @@ pipeline {
 
         stage('Deploy to Nexus') {
             steps {
-                sh 'mvn deploy -DskipTests'
+                script {
+                    // Générer un settings.xml temporaire avec les credentials Nexus injectés
+                    writeFile file: 'settings-temp.xml', text: """
+                    <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                              xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+                      <servers>
+                        <server>
+                          <id>nexus-snapshots</id>
+                          <username>${env.NEXUS_USER}</username>
+                          <password>${env.NEXUS_PASS}</password>
+                        </server>
+                        <server>
+                          <id>nexus-releases</id>
+                          <username>${env.NEXUS_USER}</username>
+                          <password>${env.NEXUS_PASS}</password>
+                        </server>
+                      </servers>
+                    </settings>
+                    """
+                    sh 'mvn deploy -DskipTests -s settings-temp.xml'
+                }
             }
         }
 
