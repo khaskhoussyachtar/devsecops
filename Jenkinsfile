@@ -8,8 +8,7 @@ pipeline {
 
     environment {
         SONAR_TOKEN = credentials('sonarqube-token')
-        NEXUS_USER = credentials('nexus-username')    // Jenkins credential with your Nexus username
-        NEXUS_PASS = credentials('nexus-password')    // Jenkins credential with your Nexus password
+        NEXUS = credentials('nexus-credentials') // Un seul credential Username+Password
     }
 
     stages {
@@ -43,7 +42,6 @@ pipeline {
         stage('Deploy to Nexus') {
             steps {
                 script {
-                    // Générer un settings.xml temporaire avec les credentials Nexus injectés
                     writeFile file: 'settings-temp.xml', text: """
                     <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -51,13 +49,13 @@ pipeline {
                       <servers>
                         <server>
                           <id>nexus-snapshots</id>
-                          <username>${env.NEXUS_USER}</username>
-                          <password>${env.NEXUS_PASS}</password>
+                          <username>${env.NEXUS_USR}</username>
+                          <password>${env.NEXUS_PSW}</password>
                         </server>
                         <server>
                           <id>nexus-releases</id>
-                          <username>${env.NEXUS_USER}</username>
-                          <password>${env.NEXUS_PASS}</password>
+                          <username>${env.NEXUS_USR}</username>
+                          <password>${env.NEXUS_PSW}</password>
                         </server>
                       </servers>
                     </settings>
