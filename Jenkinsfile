@@ -7,8 +7,8 @@ pipeline {
     }
 
     environment {
-        SONAR_TOKEN = credentials('sonarqube-token') // Ton token Sonar
-        NEXUS = credentials('nexus-credentials')     // Le credential créé ci-dessus
+        SONAR_TOKEN = credentials('sonarqube-token')
+        NEXUS_CREDENTIALS = credentials('nexus-credentials')
     }
 
     stages {
@@ -20,7 +20,7 @@ pipeline {
 
         stage('Build and Test') {
             steps {
-                sh 'mvn clean verify'
+                sh 'mvn clean test jacoco:report'
             }
         }
 
@@ -29,11 +29,11 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh """
                         mvn sonar:sonar \
-                          -Dsonar.projectKey=devsecops \
-                          -Dsonar.host.url=http://localhost:9000 \
-                          -Dsonar.login=${SONAR_TOKEN} \
-                          -Dsonar.java.coveragePlugin=jacoco \
-                          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                            -Dsonar.projectKey=devsecops \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.java.coveragePlugin=jacoco \
+                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                     """
                 }
             }
@@ -42,24 +42,23 @@ pipeline {
         stage('Deploy to Nexus') {
             steps {
                 script {
-                    // Fichier temporaire settings.xml avec credentials injectés
                     writeFile file: 'settings-temp.xml', text: """
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
-  <servers>
-    <server>
-      <id>nexus-snapshots</id>
-      <username>${env.NEXUS_USR}</username>
-      <password>${env.NEXUS_PSW}</password>
-    </server>
-    <server>
-      <id>nexus-releases</id>
-      <username>${env.NEXUS_USR}</username>
-      <password>${env.NEXUS_PSW}</password>
-    </server>
-  </servers>
-</settings>
+                        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+                            <servers>
+                                <server>
+                                    <id>nexus-snapshots</id>
+                                    <username>${NEXUS_CREDENTIALS_USR}</username>
+                                    <password>${NEXUS_CREDENTIALS_PSW}</password>
+                                </server>
+                                <server>
+                                    <id>nexus-releases</id>
+                                    <username>${NEXUS_CREDENTIALS_USR}</username>
+                                    <password>${NEXUS_CREDENTIALS_PSW}</password>
+                                </server>
+                            </servers>
+                        </settings>
                     """
                     sh 'mvn deploy -DskipTests -s settings-temp.xml'
                 }
@@ -68,7 +67,7 @@ pipeline {
 
         stage('Publish Test Results') {
             steps {
-                junit '**/target/surefire-reports/*.xml'
+                junit 'target/surefire-reports/*.xml'
             }
         }
     }
