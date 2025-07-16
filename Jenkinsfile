@@ -79,16 +79,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🏗️ Construction de l’image Docker...'
-                // 🔧 Modifie le chemin ici (si ton Dockerfile est dans ./devsecops)
-                sh 'docker build -t devsecops-springboot:latest ./devsecops'
+                sh 'docker build -t devsecops-springboot:latest .'
             }
         }
 
         stage('Run with Docker Compose') {
             steps {
                 echo '🚀 Démarrage avec Docker Compose...'
-                // 🔧 Modifie aussi ici si ton fichier docker-compose.yml est dans ./devsecops
-                sh 'docker-compose -f devsecops/docker-compose.yml up -d'
+                sh 'docker-compose -f docker-compose.yml up -d'
             }
         }
     }
@@ -96,7 +94,7 @@ pipeline {
     post {
         always {
             echo '🧹 Nettoyage : Arrêt des conteneurs Docker'
-            sh 'docker-compose -f devsecops/docker-compose.yml down || true'
+            sh 'docker-compose -f docker-compose.yml down || true'
             sh 'rm -f settings-temp.xml || true'
         }
         failure {
