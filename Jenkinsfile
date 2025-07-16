@@ -13,27 +13,33 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
+                retry(3) {
+                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
+                }
             }
         }
 
         stage('Build & Test') {
             steps {
-                sh 'mvn clean verify'
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh 'mvn clean verify'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        mvn sonar:sonar \
-                            -Dsonar.projectKey=devsecops \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.login=${SONAR_TOKEN} \
-                            -Dsonar.java.coveragePlugin=jacoco \
-                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                    """
+                timeout(time: 5, unit: 'MINUTES') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            mvn sonar:sonar \
+                                -Dsonar.projectKey=devsecops \
+                                -Dsonar.host.url=http://localhost:9000 \
+                                -Dsonar.login=${SONAR_TOKEN} \
+                                -Dsonar.java.coveragePlugin=jacoco \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        """
+                    }
                 }
             }
         }
@@ -79,6 +85,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🏗️ Construction de l’image Docker...'
+                sh 'ls -la'  // Vérifie présence Dockerfile
                 sh 'docker build -t devsecops-springboot:latest .'
             }
         }
@@ -86,7 +93,7 @@ pipeline {
         stage('Run with Docker Compose') {
             steps {
                 echo '🚀 Démarrage avec Docker Compose...'
-                sh 'docker-compose -f docker-compose.yml up -d'
+                sh 'docker-compose up -d'
             }
         }
     }
@@ -94,8 +101,9 @@ pipeline {
     post {
         always {
             echo '🧹 Nettoyage : Arrêt des conteneurs Docker'
-            sh 'docker-compose -f docker-compose.yml down || true'
+            sh 'docker-compose down || true'
             sh 'rm -f settings-temp.xml || true'
+            cleanWs()  // Nettoie workspace Jenkins
         }
         failure {
             echo '❌ Pipeline échoué.'
