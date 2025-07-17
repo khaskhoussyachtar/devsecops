@@ -1,0 +1,25 @@
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL-AUTO: update
+    depends_on:
+      - db
+    networks:
+      - devsecops-network
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: devsecops
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - devsecops-network
+
+volumes:
+  mysql_data:
+
+networks:
+  devsecops-network:
+    driver: bridge
