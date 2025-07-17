@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ton_image_app  # Remplace par le nom de ton image Docker
+    image: devsecops-springboot:latest
     environment:
       SPRING_DATASOURCE_PASSWORD: admin
       SPRING_JPA_HIBERNATE_DDL-AUTO: update
