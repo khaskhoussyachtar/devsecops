@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ton_image_app  # Remplace par l'image Docker de ton app Spring Boot
+    image: ton_image_app  # Remplace par le nom de ton image Docker
     environment:
       SPRING_DATASOURCE_PASSWORD: admin
       SPRING_JPA_HIBERNATE_DDL-AUTO: update
@@ -13,7 +13,7 @@ services:
     networks:
       - devsecops-network
     ports:
-      - "8280:8080"  # accès à l'app via localhost:8280
+      - "8280:8080"
 
   db:
     image: mysql:8.0
