@@ -7,14 +7,17 @@ pipeline {
     }
 
     environment {
+        // Use credentials binding instead of direct string interpolation
         SONAR_TOKEN = credentials('sonarqube-token')
+        NEXUS_USER = credentials('nexus-credentials').username
+        NEXUS_PASS = credentials('nexus-credentials').password
     }
 
     stages {
-        stage('Clone') {
+        stage('Clone Repository') {
             steps {
                 retry(3) {
-                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
+                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git '
                 }
             }
         }
@@ -35,7 +38,7 @@ pipeline {
                             mvn sonar:sonar \
                                 -Dsonar.projectKey=devsecops \
                                 -Dsonar.host.url=http://localhost:9000 \
-                                -Dsonar.login=${SONAR_TOKEN} \
+                                -Dsonar.login=\$SONAR_TOKEN \
                                 -Dsonar.java.coveragePlugin=jacoco \
                                 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                         """
@@ -47,31 +50,26 @@ pipeline {
         stage('Deploy to Nexus') {
             steps {
                 script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'nexus-credentials',
-                        usernameVariable: 'NEXUS_USER',
-                        passwordVariable: 'NEXUS_PASS'
-                    )]) {
-                        writeFile file: 'settings-temp.xml', text: """
-                            <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-                                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                                      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd ">
-                              <servers>
-                                <server>
-                                  <id>nexus-snapshots</id>
-                                  <username>\${NEXUS_USER}</username>
-                                  <password>\${NEXUS_PASS}</password>
-                                </server>
-                                <server>
-                                  <id>nexus-releases</id>
-                                  <username>\${NEXUS_USER}</username>
-                                  <password>\${NEXUS_PASS}</password>
-                                </server>
-                              </servers>
-                            </settings>
-                        """
-                        sh 'mvn deploy -DskipTests -s settings-temp.xml'
-                    }
+                    writeFile file: 'settings-temp.xml', text: """
+                        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd ">
+                          <servers>
+                            <server>
+                              <id>nexus-snapshots</id>
+                              <username>\${NEXUS_USER}</username>
+                              <password>\${NEXUS_PASS}</password>
+                            </server>
+                            <server>
+                              <id>nexus-releases</id>
+                              <username>\${NEXUS_USER}</username>
+                              <password>\${NEXUS_PASS}</password>
+                            </server>
+                          </servers>
+                        </settings>
+                    """
+
+                    sh 'mvn deploy -DskipTests -s settings-temp.xml'
                 }
             }
         }
@@ -84,15 +82,30 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo '🏗️ Construction de l’image Docker...'
-                sh 'ls -la'  // Vérifie présence Dockerfile
-                sh 'docker build -t devsecops-springboot:latest .'
+                echo '🏗️ Building Docker image using Docker Buildx...'
+                sh 'ls -la'  // Confirm presence of Dockerfile
+
+                // Ensure Dockerfile exists
+                sh '''
+                    if [ ! -f Dockerfile ]; then
+                        echo "ERROR: Dockerfile not found!"
+                        exit 1
+                    fi
+                '''
+
+                // Create or reuse a Buildx builder
+                sh '''
+                    docker buildx inspect mybuilder || docker buildx create --use --name mybuilder
+                '''
+
+                // Build the image using Buildx
+                sh 'docker buildx build --platform linux/amd64 -t devsecops-springboot:latest .'
             }
         }
 
         stage('Run with Docker Compose') {
             steps {
-                echo '🚀 Démarrage avec Docker Compose...'
+                echo '🚀 Starting with Docker Compose...'
                 sh 'docker-compose up -d'
             }
         }
@@ -100,13 +113,18 @@ pipeline {
 
     post {
         always {
-            echo '🧹 Nettoyage : Arrêt des conteneurs Docker'
+            echo '🧹 Cleanup: Stopping containers...'
             sh 'docker-compose down || true'
             sh 'rm -f settings-temp.xml || true'
-            cleanWs()  // Nettoie workspace Jenkins
+            cleanWs()
         }
+
         failure {
-            echo '❌ Pipeline échoué.'
+            echo '❌ Pipeline failed!'
+        }
+
+        success {
+            echo '✅ Pipeline succeeded!'
         }
     }
 }
