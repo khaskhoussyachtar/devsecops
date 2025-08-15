@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
@@ -20,11 +20,11 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <jacoco.version>0.8.8</jacoco.version>
         <sonar.maven.plugin.version>3.9.1.2184</sonar.maven.plugin.version>
+        <dependency.check.version>9.2.0</dependency.check.version> <!-- OWASP Dependency-Check -->
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Boot BOM -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -36,26 +36,22 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Spring Boot Web Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Boot Data JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- MySQL Connector -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Spring Boot Starter Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -68,7 +64,6 @@
             </exclusions>
         </dependency>
 
-        <!-- Jacoco Agent (pour la couverture) -->
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
@@ -79,7 +74,6 @@
 
     <build>
         <plugins>
-            <!-- Compiler -->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
@@ -89,7 +83,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -103,7 +96,6 @@
                 </executions>
             </plugin>
 
-            <!-- Maven Surefire Plugin (unit tests) -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M7</version>
@@ -115,7 +107,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven Failsafe Plugin (integration tests) -->
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.0.0-M7</version>
@@ -134,7 +125,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Jacoco Plugin (code coverage) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -156,17 +146,40 @@
                 </executions>
             </plugin>
 
-            <!-- SonarQube Maven Plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>${sonar.maven.plugin.version}</version>
             </plugin>
 
-            <!-- Maven Deploy Plugin -->
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>3.0.0-M1</version>
+            </plugin>
+
+            <!-- ✅ OWASP Dependency-Check Plugin -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${dependency.check.version}</version>
+                <configuration>
+                    <skipTest>true</skipTest>
+                    <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
+                    <failBuildOnCVSS>7</failBuildOnCVSS> <!-- Fail on High/Critical -->
+                    <formats>
+                        <format>HTML</format>
+                        <format>XML</format>
+                        <format>JSON</format>
+                    </formats>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
