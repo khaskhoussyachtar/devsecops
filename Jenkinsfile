@@ -7,15 +7,17 @@ pipeline {
     }
 
     environment {
-        // Use credentials binding; avoid insecure Groovy string interpolation
+        // Use credentials binding for secure access
         SONAR_TOKEN = credentials('sonarqube-token')
+        PROMETHEUS_URL = 'http://<prometheus-ip>:9090' // Replace with your Prometheus server IP
+        GRAFANA_URL = 'http://<grafana-ip>:3000'       // Replace with your Grafana server IP
     }
 
     stages {
         stage('Clone Repository') {
             steps {
                 retry(3) {
-                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git '
+                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
                 }
             }
         }
@@ -56,7 +58,7 @@ pipeline {
                         writeFile file: 'settings-temp.xml', text: """
                             <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
                                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                                      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd ">
+                                      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
                               <servers>
                                 <server>
                                   <id>nexus-snapshots</id>
@@ -111,6 +113,39 @@ pipeline {
             steps {
                 echo '🚀 Starting with Docker Compose...'
                 sh 'docker-compose up -d'
+            }
+        }
+
+        stage('Configure Prometheus Metrics') {
+            steps {
+                echo '📊 Configuring Prometheus metrics...'
+                // Install Prometheus Metrics Plugin in Jenkins (if not already installed)
+                sh '''
+                    if ! curl -sSL http://localhost:8080/pluginManager/api/json?depth=1 | grep -q 'prometheus'; then
+                        echo "Installing Prometheus Metrics Plugin..."
+                        curl -X POST http://localhost:8080/pluginManager/installNecessaryPlugins --data '<jenkins><install plugin="prometheus@latest"/></jenkins>' --header 'Content-Type: text/xml'
+                        sleep 30  # Wait for plugin installation
+                    fi
+                '''
+
+                // Restart Jenkins to apply changes
+                sh 'sudo systemctl restart jenkins'
+
+                // Verify Prometheus metrics endpoint
+                sh 'curl -I http://localhost:8080/prometheus'
+            }
+        }
+
+        stage('Import Grafana Dashboard') {
+            steps {
+                echo '📊 Importing Grafana Dashboard...'
+                // Import a pre-built dashboard (ID: 9964) for Jenkins monitoring
+                sh '''
+                    curl -X POST \
+                        -H "Content-Type: application/json" \
+                        -d '{"dashboard": {"id": null, "uid": null, "title": "Jenkins Monitoring", "panels": []}, "folderId": 0, "overwrite": false}' \
+                        ${GRAFANA_URL}/api/dashboards/import
+                '''
             }
         }
     }
