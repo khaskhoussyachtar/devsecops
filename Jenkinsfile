@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        // Use credentials binding for secure access
+        // Securely inject credentials for Nexus, SonarQube, Prometheus, and Grafana
         SONAR_TOKEN = credentials('sonarqube-token')
         NEXUS_USER = credentials('nexus-username')
         NEXUS_PASS = credentials('nexus-password')
@@ -155,9 +155,13 @@ pipeline {
     post {
         always {
             echo '🧹 Cleanup: Stopping containers...'
-            sh 'docker-compose down || true'
-            sh 'rm -f settings-temp.xml || true'
-            cleanWs()
+            script {
+                node {
+                    sh 'docker-compose down || true'
+                    sh 'rm -f settings-temp.xml || true'
+                    cleanWs()
+                }
+            }
         }
 
         failure {
