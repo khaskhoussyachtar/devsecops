@@ -20,7 +20,9 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <jacoco.version>0.8.8</jacoco.version>
         <sonar.maven.plugin.version>3.9.1.2184</sonar.maven.plugin.version>
-        <dependency.check.version>9.2.0</dependency.check.version> <!-- OWASP Dependency-Check -->
+        <dependency.check.version>9.2.0</dependency.check.version>
+        <!-- ⚡️ NVD API Key -->
+        <nvd.api.key>c11219b3-0d9d-4e83-b132-0c5a1f009bff</nvd.api.key>
     </properties>
 
     <dependencyManagement>
@@ -74,6 +76,7 @@
 
     <build>
         <plugins>
+            <!-- Compiler -->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
@@ -83,6 +86,7 @@
                 </configuration>
             </plugin>
 
+            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -96,6 +100,7 @@
                 </executions>
             </plugin>
 
+            <!-- Surefire & Failsafe -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M7</version>
@@ -125,6 +130,7 @@
                 </configuration>
             </plugin>
 
+            <!-- Jacoco -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -146,18 +152,20 @@
                 </executions>
             </plugin>
 
+            <!-- SonarQube -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>${sonar.maven.plugin.version}</version>
             </plugin>
 
+            <!-- Maven Deploy -->
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>3.0.0-M1</version>
             </plugin>
 
-            <!-- ✅ OWASP Dependency-Check Plugin -->
+            <!-- OWASP Dependency-Check -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
@@ -165,13 +173,16 @@
                 <configuration>
                     <skipTest>true</skipTest>
                     <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
-                    <failBuildOnCVSS>7</failBuildOnCVSS> <!-- Fail on High/Critical -->
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
                     <formats>
                         <format>HTML</format>
                         <format>XML</format>
                         <format>JSON</format>
                     </formats>
                     <outputDirectory>${project.build.directory}</outputDirectory>
+                    <nvd>
+                        <apiKey>${nvd.api.key}</apiKey> <!-- ✅ NVD API Key -->
+                    </nvd>
                 </configuration>
                 <executions>
                     <execution>
@@ -181,6 +192,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 
