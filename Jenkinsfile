@@ -9,8 +9,10 @@ pipeline {
     environment {
         // Use credentials binding for secure access
         SONAR_TOKEN = credentials('sonarqube-token')
-        PROMETHEUS_URL = 'http://<prometheus-ip>:9090' // Replace with your Prometheus server IP
-        GRAFANA_URL = 'http://<grafana-ip>:3000'       // Replace with your Grafana server IP
+        NEXUS_USER = credentials('nexus-username')
+        NEXUS_PASS = credentials('nexus-password')
+        PROMETHEUS_URL = 'http://192.168.56.10:9090' // Replace with your Prometheus server IP
+        GRAFANA_URL = 'http://192.168.56.10:3000'   // Replace with your Grafana server IP
     }
 
     stages {
@@ -124,7 +126,7 @@ pipeline {
                     if ! curl -sSL http://localhost:8080/pluginManager/api/json?depth=1 | grep -q 'prometheus'; then
                         echo "Installing Prometheus Metrics Plugin..."
                         curl -X POST http://localhost:8080/pluginManager/installNecessaryPlugins --data '<jenkins><install plugin="prometheus@latest"/></jenkins>' --header 'Content-Type: text/xml'
-                        sleep 30  # Wait for plugin installation
+                        sleep 30  // Wait for plugin installation
                     fi
                 '''
 
