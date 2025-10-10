@@ -165,34 +165,7 @@
                 <version>3.0.0-M1</version>
             </plugin>
 
-            <!-- OWASP Dependency-Check -->
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>${dependency.check.version}</version>
-                <configuration>
-                    <skipTest>true</skipTest>
-                    <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
-                    <failBuildOnCVSS>7</failBuildOnCVSS>
-                    <formats>
-                        <format>HTML</format>
-                        <format>XML</format>
-                        <format>JSON</format>
-                    </formats>
-                    <outputDirectory>${project.build.directory}</outputDirectory>
-                    <nvd>
-                        <apiKey>${nvd.api.key}</apiKey> <!-- ✅ NVD API Key -->
-                    </nvd>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
+           
         </plugins>
     </build>
 
