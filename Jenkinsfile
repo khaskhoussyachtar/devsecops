@@ -97,15 +97,32 @@ pipeline {
             }
         }
 
+        // 🔐 UPDATED: Secure and Reliable Trivy Scan
         stage('Scan Docker Image with Trivy') {
             steps {
                 script {
                     def imageName = "devsecops-springboot:latest"
                     echo "🔍 Scanning Docker image ${imageName} with Trivy..."
-                    sh """
-                        docker pull ${imageName} || true
-                        trivy image --exit-code 1 --severity HIGH,CRITICAL ${imageName}
-                    """
+
+                    // Retry up to 3 times for transient network issues
+                    retry(3) {
+                        timeout(time: 15, unit: 'MINUTES') {
+                            sh """
+                                # Ensure image exists
+                                docker pull ${imageName} || true
+
+                                # Run Trivy with fallback DB mirrors and long timeout
+                                trivy image \
+                                  --db-repository public.ecr.aws/aquasecurity/trivy-db \
+                                  --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db \
+                                  --timeout 10m \
+                                  --exit-code 1 \
+                                  --severity HIGH,CRITICAL \
+                                  --no-progress \
+                                  ${imageName}
+                            """
+                        }
+                    }
                 }
             }
         }
@@ -142,7 +159,7 @@ pipeline {
         always {
             echo '🧹 Cleanup: Stopping containers...'
             dir("${WORKSPACE}") {
-                sh 'docker-compose down || true'
+                sh 'docker-compose down --remove-orphans || true'
             }
             sh 'rm -f settings-temp.xml || true'
             cleanWs()
