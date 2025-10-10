@@ -17,7 +17,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 retry(3) {
-                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
+                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git  '
                 }
             }
         }
@@ -57,7 +57,7 @@ pipeline {
                     writeFile file: 'settings-temp.xml', text: """
                         <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
                                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+                                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd  ">
                           <servers>
                             <server>
                               <id>nexus-snapshots</id>
@@ -94,6 +94,19 @@ pipeline {
                     docker buildx inspect mybuilder || docker buildx create --use --name mybuilder
                     docker buildx build --platform linux/amd64 -t devsecops-springboot:latest .
                 '''
+            }
+        }
+
+        stage('Scan Docker Image with Trivy') {
+            steps {
+                script {
+                    def imageName = "devsecops-springboot:latest"
+                    echo "🔍 Scanning Docker image ${imageName} with Trivy..."
+                    sh """
+                        docker pull ${imageName}
+                        trivy image --exit-code 1 --severity HIGH,CRITICAL ${imageName}
+                    """
+                }
             }
         }
 
