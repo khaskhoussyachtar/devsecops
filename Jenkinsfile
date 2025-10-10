@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         // SonarQube & Monitoring URLs
-        SONAR_TOKEN = credentials('sonarqube-token') // Create this in Jenkins
+        SONAR_TOKEN = credentials('sonarqube-token') // Créer cette credential dans Jenkins
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL = 'http://192.168.56.10:3000'
     }
@@ -17,7 +17,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 retry(3) {
-                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git  '
+                    git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
                 }
             }
         }
@@ -50,28 +50,28 @@ pipeline {
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials', // Create this with user=admin, pass=admin
+                    credentialsId: 'nexus-credentials',
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    writeFile file: 'settings-temp.xml', text: """
-                        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-                                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd  ">
-                          <servers>
-                            <server>
-                              <id>nexus-snapshots</id>
-                              <username>${NEXUS_USER}</username>
-                              <password>${NEXUS_PASS}</password>
-                            </server>
-                            <server>
-                              <id>nexus-releases</id>
-                              <username>${NEXUS_USER}</username>
-                              <password>${NEXUS_PASS}</password>
-                            </server>
-                          </servers>
-                        </settings>
-                    """
+                    writeFile file: 'settings-temp.xml', text: """<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+      <id>nexus-snapshots</id>
+      <username>${NEXUS_USER}</username>
+      <password>${NEXUS_PASS}</password>
+    </server>
+    <server>
+      <id>nexus-releases</id>
+      <username>${NEXUS_USER}</username>
+      <password>${NEXUS_PASS}</password>
+    </server>
+  </servers>
+</settings>
+                    """.stripIndent()
                     sh 'mvn deploy -DskipTests -s settings-temp.xml'
                 }
             }
@@ -103,7 +103,7 @@ pipeline {
                     def imageName = "devsecops-springboot:latest"
                     echo "🔍 Scanning Docker image ${imageName} with Trivy..."
                     sh """
-                        docker pull ${imageName}
+                        docker pull ${imageName} || true
                         trivy image --exit-code 1 --severity HIGH,CRITICAL ${imageName}
                     """
                 }
@@ -112,7 +112,7 @@ pipeline {
 
         stage('Run with Docker Compose') {
             steps {
-                dir("${WORKSPACE}") { // ensure correct directory
+                dir("${WORKSPACE}") {
                     sh 'docker-compose up -d'
                 }
             }
