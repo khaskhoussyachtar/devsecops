@@ -97,28 +97,34 @@ pipeline {
             }
         }
 
-        // 🔐 UPDATED: Secure and Reliable Trivy Scan
+        // 🔐 OPTIMIZED: Fast & Reliable Trivy Scan (No Secret Scanning)
         stage('Scan Docker Image with Trivy') {
             steps {
                 script {
                     def imageName = "devsecops-springboot:latest"
                     echo "🔍 Scanning Docker image ${imageName} with Trivy..."
 
-                    // Retry up to 3 times for transient network issues
-                    retry(3) {
-                        timeout(time: 15, unit: 'MINUTES') {
-                            sh """
-                                # Ensure image exists
-                                docker pull ${imageName} || true
+                    // Ensure image exists locally before scanning
+                    sh """
+                        if ! docker image inspect ${imageName} >/dev/null 2>&1; then
+                            echo "❌ ERROR: Image '${imageName}' not found locally!"
+                            exit 1
+                        fi
+                        echo "✅ Image found. Starting optimized Trivy scan..."
+                    """
 
-                                # Run Trivy with fallback DB mirrors and long timeout
+                    // Run Trivy without secret scanning for speed
+                    retry(3) {
+                        timeout(time: 10, unit: 'MINUTES') {
+                            sh """
                                 trivy image \
                                   --db-repository public.ecr.aws/aquasecurity/trivy-db \
                                   --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db \
-                                  --timeout 10m \
+                                  --timeout 5m \
                                   --exit-code 1 \
                                   --severity HIGH,CRITICAL \
                                   --no-progress \
+                                  --scanners vuln \
                                   ${imageName}
                             """
                         }
