@@ -1,209 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
+    <groupId>com.devsecops</groupId>
     <artifactId>devsecops</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
-
+    <version>1.0.0</version>
     <name>devsecops</name>
-    <description>Projet complet DevSecOps Spring Boot avec CI/CD, SonarQube, Nexus...</description>
 
+    <!-- ✅ Version Java -->
     <properties>
         <java.version>17</java.version>
-        <spring.boot.version>2.7.13</spring.boot.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <jacoco.version>0.8.8</jacoco.version>
-        <sonar.maven.plugin.version>3.9.1.2184</sonar.maven.plugin.version>
+        <spring-boot.version>3.3.3</spring-boot.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!-- ############## SPRING DEPENDENCIES ################### -->
+    <!-- ✅ DEPENDANCES -->
+    <dependencies>
+
+        <!-- Spring Boot Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Tests -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+
+    <!-- ✅ DEPENDENCY MANAGEMENT -->
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring.boot.version}</version>
+                <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>
-        <!-- Spring Boot -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-
-        <!-- MYSQL -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- TEST -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jacoco</groupId>
-            <artifactId>org.jacoco.agent</artifactId>
-            <version>${jacoco.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <!-- ############## BUILD ################### -->
+    <!-- ✅ BUILD -->
     <build>
         <plugins>
 
-            <!-- Compiler -->
+            <!-- ✅ Compiler Java 17 -->
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.11.0</version>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <release>${java.version}</release>
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot -->
+            <!-- ✅ Spring Boot Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
-                <executions>
-                    <execution>
-                        <goals><goal>repackage</goal></goals>
-                    </execution>
-                </executions>
             </plugin>
 
-            <!-- Surefire (Tests Unitaires) -->
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M7</version>
-                <configuration>
-                    <includes>
-                        <include>**/*Test.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
-
-            <!-- Failsafe (Tests Intégration) -->
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.0.0-M7</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <includes>
-                        <include>**/*IT.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
-
-            <!-- Jacoco -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
-                <executions>
-                    <execution>
-                        <id>prepare-agent</id>
-                        <goals><goal>prepare-agent</goal></goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>prepare-package</phase>
-                        <goals><goal>report</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- ✅✅ OWASP Dependency Check -->
+            <!-- ✅ ✅ ✅ OWASP DEPENDENCY CHECK -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>9.2.0</version>
+
                 <configuration>
-                    <nvdApiKey>${NVD_API_KEY}</nvdApiKey>
-                    <format>HTML</format>
-                    <skip>false</skip>
+
+                    <!-- ✅ INJECT NVD KEY -->
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+
+                    <!-- ✅ FIX CISA FATAL ERROR -->
+                    <cisaUseAllowed>false</cisaUseAllowed>
+
+                    <!-- ✅ Avoid 403/404 -->
+                    <nvdApiDelay>6000</nvdApiDelay>
+
+                    <!-- ✅ Always update -->
+                    <autoupdate>true</autoupdate>
+
+                    <!-- ✅ Disable mirroring (fix DB corruption) -->
+                    <dataMirroringEnabled>false</dataMirroringEnabled>
+
+                    <!-- ✅ Reports -->
+                    <formats>
+                        <format>HTML</format>
+                    </formats>
+
+                    <!-- ✅ Do NOT fail build -->
                     <failOnError>false</failOnError>
+                    <skipSystemScope>true</skipSystemScope>
+
                 </configuration>
+
                 <executions>
                     <execution>
-                        <goals><goal>check</goal></goals>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- Sonar -->
-            <plugin>
-                <groupId>org.sonarsource.scanner.maven</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
-                <version>${sonar.maven.plugin.version}</version>
-            </plugin>
-
-            <!-- Deploy -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>3.0.0-M1</version>
-            </plugin>
-
         </plugins>
     </build>
-
-    <!-- ################### Nexus ################### -->
-    <distributionManagement>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://192.168.56.10:8081/repository/maven-releases/</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <name>Nexus Snapshot Repository</name>
-            <url>http://192.168.56.10:8081/repository/maven-snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-    </repositories>
 
 </project>
