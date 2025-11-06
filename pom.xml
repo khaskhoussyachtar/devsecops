@@ -47,14 +47,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ✅ JUnit 5 -->
+        <!-- ✅ TESTS JUNIT 5 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Jacoco -->
+        <!-- Optional Jacoco test agent -->
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
@@ -109,23 +109,32 @@
                 </executions>
             </plugin>
 
-            <!-- ✅ OWASP Dependency Check (fixé ✅) -->
+            <!-- ✅ OWASP Dependency Check (VERSION SANS NVD API KEY) -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>${dependency-check.version}</version>
-                <configuration>
-                    <!-- ✅ Évite l'erreur NVD 403 -->
-                    <autoUpdate>false</autoUpdate>
 
+                <configuration>
+
+                    <!-- ✅ Désactive NVD car nécessite API KEY -->
+                    <nvdApiKey></nvdApiKey>
+                    <nvdDatafeedEnabled>false</nvdDatafeedEnabled>
+
+                    <!-- ✅ Active uniquement les sources gratuites (fonctionnent sans clé) -->
+                    <ossIndexEnabled>true</ossIndexEnabled>
+                    <retireJsEnabled>true</retireJsEnabled>
+
+                    <!-- ✅ Dossiers -->
+                    <autoUpdate>true</autoUpdate>
                     <dataDirectory>${project.build.directory}/dependency-check</dataDirectory>
                     <outputDirectory>${project.build.directory}</outputDirectory>
 
-                    <!-- ✅ Ne plante que CVSS >= 10 -->
+                    <!-- ✅ Politique de fail -->
                     <failBuildOnCVSS>10</failBuildOnCVSS>
-
                     <format>HTML</format>
                 </configuration>
+
                 <executions>
                     <execution>
                         <phase>verify</phase>
