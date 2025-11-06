@@ -132,6 +132,12 @@
 
         </plugins>
     </build>
+         <plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>9.2.0</version>
+</plugin>
+
 
     <!-- ✅ Maven Central -->
     <repositories>
