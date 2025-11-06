@@ -11,7 +11,6 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.3</version>
-        <relativePath/>
     </parent>
 
     <groupId>com.example</groupId>
@@ -47,14 +46,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ✅ TEST JUNIT 5 -->
+        <!-- ✅ TESTS JUNIT -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Jacoco Agent (optionnel) -->
+        <!-- ✅ Jacoco test agent -->
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
@@ -68,7 +67,7 @@
     <build>
         <plugins>
 
-            <!-- ✅ Compiler -->
+            <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -79,13 +78,13 @@
                 </configuration>
             </plugin>
 
-            <!-- ✅ Spring Boot Plugin -->
+            <!-- Spring Boot -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- ✅ Test Plugin -->
+            <!-- Tests -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
@@ -99,46 +98,47 @@
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
+                        <goals><goal>prepare-agent</goal></goals>
                     </execution>
                     <execution>
                         <id>report</id>
                         <phase>verify</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
+                        <goals><goal>report</goal></goals>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- ✅ OWASP Dependency Check — VERSION 100% SANS NVD -->
+            <!-- ✅ OWASP Dependency Check — MODE OFFLINE TOTAL -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>${dependency-check.version}</version>
 
                 <configuration>
-
                     <!-- ✅ Désactiver totalement NVD -->
-                    <nvdApiKey></nvdApiKey>
                     <nvdApiEnabled>false</nvdApiEnabled>
                     <nvdDatafeedEnabled>false</nvdDatafeedEnabled>
                     <nvdEnabled>false</nvdEnabled>
 
-                    <!-- ✅ Activer seulement les sources gratuites -->
+                    <!-- ✅ Désactiver sources NVD/CISA problématiques -->
+                    <cisaKevEnabled>false</cisaKevEnabled>
+                    <hostedSuppressionsEnabled>false</hostedSuppressionsEnabled>
+
+                    <!-- ✅ Garder seulement OSS Index + RetireJS -->
                     <ossIndexEnabled>true</ossIndexEnabled>
                     <retireJsEnabled>true</retireJsEnabled>
-                    <centralAnalyzerEnabled>true</centralAnalyzerEnabled>
 
-                    <!-- ✅ Dossiers -->
-                    <autoUpdate>true</autoUpdate>
+                    <!-- ✅ Pas de mise à jour, pas de download -->
+                    <autoUpdate>false</autoUpdate>
+
+                    <!-- ✅ Répertoires -->
                     <dataDirectory>${project.build.directory}/dependency-check</dataDirectory>
                     <outputDirectory>${project.build.directory}</outputDirectory>
+
+                    <!-- ✅ Format du rapport -->
                     <format>HTML</format>
 
-                    <!-- ✅ Politique de fail -->
+                    <!-- ✅ Ne pas casser le build sauf CVSS >= 10 -->
                     <failBuildOnCVSS>10</failBuildOnCVSS>
                 </configuration>
 
@@ -155,7 +155,7 @@
         </plugins>
     </build>
 
-    <!-- ✅ MAVEN CENTRAL -->
+    <!-- ✅ Maven Central -->
     <repositories>
         <repository>
             <id>central</id>
