@@ -17,6 +17,9 @@ pipeline {
 
     stages {
 
+        /* =============================
+         * 1️⃣ CLONE DU REPOSITORY
+         * ============================= */
         stage('Clone Repository') {
             steps {
                 retry(3) {
@@ -25,12 +28,15 @@ pipeline {
             }
         }
 
+        /* =============================
+         * 2️⃣ SECRETS SCAN — GITLEAKS
+         * ============================= */
         stage('Secrets Scan') {
             steps {
                 sh '''
                     echo "🔍 Running Gitleaks..."
                     if ! command -v gitleaks >/dev/null; then
-                        echo "⚠️ gitleaks not found — skipping secrets scan"
+                        echo "⚠️ Gitleaks not found — skipping secrets scan"
                         exit 0
                     fi
                     gitleaks detect --source . --no-banner --report-path gitleaks-report.json
@@ -48,10 +54,16 @@ pipeline {
             post { always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true } }
         }
 
+        /* =============================
+         * 3️⃣ BUILD & TEST — MAVEN
+         * ============================= */
         stage('Build & Test') {
             steps { sh 'mvn clean verify -U' }
         }
 
+        /* =============================
+         * 4️⃣ ANALYSE SONARQUBE (SAST)
+         * ============================= */
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
@@ -67,6 +79,48 @@ pipeline {
             }
         }
 
+        /* =============================
+         * 5️⃣ SCAN DES DÉPENDANCES — TRIVY (SCA)
+         * ============================= */
+        stage('Dependencies Scan (Trivy SCA)') {
+            steps {
+                sh '''
+                    echo "🔍 Running Trivy filesystem scan..."
+                    if ! command -v trivy >/dev/null; then
+                        echo "⚠️ Trivy not found — skipping"
+                        exit 0
+                    fi
+                    trivy fs --format table --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed --output trivy-fs-report.txt .
+                '''
+            }
+            post { always { archiveArtifacts artifacts: 'trivy-fs-report.txt', allowEmptyArchive: true } }
+        }
+
+        /* =============================
+         * 6️⃣ BUILD DOCKER IMAGE
+         * ============================= */
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t ${IMAGE_TAG} .'
+            }
+        }
+
+        /* =============================
+         * 7️⃣ SCAN DE L’IMAGE — TRIVY
+         * ============================= */
+        stage('Docker Image Scan (Trivy)') {
+            steps {
+                sh '''
+                    echo "🐳 Scanning Docker image with Trivy..."
+                    trivy image --format table --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed --output trivy-image-report.txt ${IMAGE_TAG}
+                '''
+            }
+            post { always { archiveArtifacts artifacts: 'trivy-image-report.txt', allowEmptyArchive: true } }
+        }
+
+        /* =============================
+         * 8️⃣ DEPLOY TO NEXUS
+         * ============================= */
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([usernamePassword(
@@ -92,10 +146,9 @@ EOF
             }
         }
 
-        stage('Build Docker Image') {
-            steps { sh 'docker build -t ${IMAGE_TAG} .' }
-        }
-
+        /* =============================
+         * 9️⃣ RUN CONTAINER
+         * ============================= */
         stage('Run Container') {
             steps {
                 sh '''
@@ -105,7 +158,9 @@ EOF
             }
         }
 
-        // ✅ Stage Prometheus non bloquant
+        /* =============================
+         * 🔟 PROMETHEUS CHECK (OPTIONAL)
+         * ============================= */
         stage('Prometheus Metrics Check (Optional)') {
             steps {
                 sh '''
@@ -115,11 +170,17 @@ EOF
             }
         }
 
+        /* =============================
+         * 1️⃣1️⃣ GRAFANA DASHBOARD
+         * ============================= */
         stage('Grafana Dashboard') {
             steps { echo "📊 Grafana URL: ${GRAFANA_URL}" }
         }
     }
 
+    /* =============================
+     * 🔚 POST ACTIONS
+     * ============================= */
     post {
         always {
             echo '🧹 Cleanup...'
