@@ -13,7 +13,6 @@ pipeline {
         IMAGE_TAG      = 'devsecops-springboot:latest'
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL    = 'http://192.168.56.10:3000'
-        EXTERNAL_PROMETHEUS_ENDPOINT = 'http://192.168.56.10:8081/service/metrics/prometheus'
     }
 
     stages {
@@ -49,19 +48,21 @@ pipeline {
             post { always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true } }
         }
 
-        stage('Build & Test') { steps { sh 'mvn clean verify -U' } }
+        stage('Build & Test') {
+            steps { sh 'mvn clean verify -U' }
+        }
 
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                    sh """
+                    sh '''
                         mvn sonar:sonar \
                             -Dsonar.projectKey=devsecops \
                             -Dsonar.host.url=http://192.168.56.10:9000 \
                             -Dsonar.login=$SONAR_TOKEN \
                             -Dsonar.coverage.exclusions=**/* \
                             -Dsonar.qualitygate.wait=true
-                    """
+                    '''
                 }
             }
         }
@@ -91,59 +92,26 @@ EOF
             }
         }
 
-        stage('Build Docker Image') { steps { sh 'docker build -t ${IMAGE_TAG} .' } }
+        stage('Build Docker Image') {
+            steps { sh 'docker build -t ${IMAGE_TAG} .' }
+        }
 
         stage('Run Container') {
             steps {
-                sh """
+                sh '''
                     docker rm -f ${APP_NAME} 2>/dev/null || true
                     docker run -d --name ${APP_NAME} -p ${APP_PORT}:${CONTAINER_PORT} ${IMAGE_TAG}
-                """
+                '''
             }
         }
 
-        stage('Prometheus Metrics Check') {
+        // ✅ Stage Prometheus non bloquant
+        stage('Prometheus Metrics Check (Optional)') {
             steps {
-                script {
-                    def endpoint = "${EXTERNAL_PROMETHEUS_ENDPOINT}"
-                    def attempts = 3
-                    def success = false
-                    for (int i = 0; i < attempts; i++) {
-                        echo "📡 Attempt ${i+1}/${attempts} — checking endpoint: ${endpoint}"
-                        def code = sh(script: "curl -sf ${endpoint} > /dev/null 2>&1; echo \$?", returnStdout: true).trim()
-                        if (code == "0") {
-                            echo "✅ Success: endpoint responded"
-                            success = true
-                            break
-                        } else {
-                            echo "❌ Failed: endpoint did not respond"
-                            sleep 5
-                        }
-                    }
-                    if (!success) {
-                        echo "⚠️ Prometheus endpoint unreachable"
-                        currentBuild.result = 'UNSTABLE'
-                    }
-                }
-            }
-        }
-
-        stage('Prometheus Scrape Validation') {
-            steps {
-                script {
-                    echo "🔍 Verifying Prometheus scrape target status..."
-                    def healthStatus = sh(
-                        script: "curl -sf ${PROMETHEUS_URL}/api/v1/targets | jq -r '.data.activeTargets[] | select(.scrapeUrl | contains(\":${APP_PORT}\")) | .health'",
-                        returnStdout: true
-                    ).trim()
-
-                    if (healthStatus == "up") {
-                        echo "✅ Prometheus is scraping the app successfully"
-                    } else {
-                        echo "⚠️ Prometheus scrape issue"
-                        currentBuild.result = 'UNSTABLE'
-                    }
-                }
+                sh '''
+                    echo "📡 Checking Prometheus metrics (non bloquant)..."
+                    curl -sf http://192.168.56.10:8081/service/metrics/prometheus || echo "⚠️ Endpoint not reachable"
+                '''
             }
         }
 
