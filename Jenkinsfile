@@ -7,7 +7,6 @@ pipeline {
     }
 
     environment {
-        // SonarQube & Monitoring URLs
         SONAR_TOKEN = credentials('sonarqube-token')
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL = 'http://192.168.56.10:3000'
@@ -15,6 +14,9 @@ pipeline {
 
     stages {
 
+        /* --------------------------------------------------
+           CLONE DU REPO
+        -------------------------------------------------- */
         stage('Clone Repository') {
             steps {
                 retry(3) {
@@ -23,6 +25,26 @@ pipeline {
             }
         }
 
+        /* --------------------------------------------------
+           ✅ DEVSECOPS — SCAN DES SECRETS (GITLEAKS)
+        -------------------------------------------------- */
+        stage('Secrets Scan') {
+            steps {
+                sh 'gitleaks detect --source . --no-banner --report-path gitleaks-report.json || true'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'gitleaks-report.json', fingerprint: true
+                }
+                unsuccessful {
+                    error "❌ Des secrets ont été détectés par Gitleaks !"
+                }
+            }
+        }
+
+        /* --------------------------------------------------
+           BUILD & TEST
+        -------------------------------------------------- */
         stage('Build & Test') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
@@ -31,6 +53,9 @@ pipeline {
             }
         }
 
+        /* --------------------------------------------------
+           ANALYSE SONARQUBE (SAST)
+        -------------------------------------------------- */
         stage('SonarQube Analysis') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
@@ -48,6 +73,9 @@ pipeline {
             }
         }
 
+        /* --------------------------------------------------
+           DEPLOY TO NEXUS
+        -------------------------------------------------- */
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([usernamePassword(
@@ -78,12 +106,18 @@ pipeline {
             }
         }
 
+        /* --------------------------------------------------
+           TEST RESULTS
+        -------------------------------------------------- */
         stage('Publish Test Results') {
             steps {
                 junit '**/target/surefire-reports/*.xml'
             }
         }
 
+        /* --------------------------------------------------
+           DOCKER BUILD
+        -------------------------------------------------- */
         stage('Build Docker Image') {
             steps {
                 echo '🏗️ Building Docker Image...'
@@ -98,6 +132,9 @@ pipeline {
             }
         }
 
+        /* --------------------------------------------------
+           DOCKER COMPOSE
+        -------------------------------------------------- */
         stage('Run with Docker Compose') {
             steps {
                 dir("${WORKSPACE}") {
@@ -106,16 +143,20 @@ pipeline {
             }
         }
 
+        /* --------------------------------------------------
+           PROMETHEUS
+        -------------------------------------------------- */
         stage('Configure Prometheus Metrics') {
             steps {
-                echo '📊 Configuring Prometheus metrics...'
                 sh 'curl -I http://localhost:8080/prometheus || true'
             }
         }
 
+        /* --------------------------------------------------
+           GRAFANA
+        -------------------------------------------------- */
         stage('Import Grafana Dashboard') {
             steps {
-                echo '📊 Importing Grafana Dashboard...'
                 sh """
                     curl -X POST \
                         -H "Content-Type: application/json" \
@@ -126,6 +167,9 @@ pipeline {
         }
     }
 
+    /* --------------------------------------------------
+       POST ACTIONS
+    -------------------------------------------------- */
     post {
         always {
             echo '🧹 Cleanup: Stopping containers...'
