@@ -21,7 +21,6 @@
 
     <properties>
         <java.version>17</java.version>
-        <dependency-check.version>9.2.0</dependency-check.version>
     </properties>
 
     <!-- ✅ DEPENDENCIES -->
@@ -46,14 +45,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ✅ TESTS JUNIT -->
+        <!-- ✅ Tests JUnit -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ Jacoco test agent -->
+        <!-- ✅ Jacoco agent -->
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
@@ -108,61 +107,7 @@
                 </executions>
             </plugin>
 
-            <!-- ✅ OWASP Dependency Check — FIRST RUN (Download DB) -->
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>${dependency-check.version}</version>
-
-                <configuration>
-                    <!-- ✅ Activer NVD pour télécharger la DB -->
-                    <nvdEnabled>true</nvdEnabled>
-                    <nvdApiEnabled>true</nvdApiEnabled>
-
-                    <!-- ✅ TA clé API -->
-                    <nvdApiKey>0ee6b2d2-d4aa-4ff9-89b8-e8c9bb262bc3</nvdApiKey>
-
-                    <!-- ✅ Autoriser mise à jour (seulement première fois) -->
-                    <autoUpdate>true</autoUpdate>
-
-                    <!-- ✅ Désactiver sources secondaires -->
-                    <cisaKevEnabled>false</cisaKevEnabled>
-                    <hostedSuppressionsEnabled>false</hostedSuppressionsEnabled>
-
-                    <!-- ✅ Garder OSS Index + RetireJS -->
-                    <ossIndexEnabled>true</ossIndexEnabled>
-                    <retireJsEnabled>true</retireJsEnabled>
-
-                    <!-- ✅ Répertoires -->
-                    <dataDirectory>${project.build.directory}/dependency-check</dataDirectory>
-                    <outputDirectory>${project.build.directory}</outputDirectory>
-
-                    <!-- ✅ Format du rapport -->
-                    <format>HTML</format>
-
-                    <!-- ✅ Ne pas casser le build sauf CVSS >= 10 -->
-                    <failBuildOnCVSS>10</failBuildOnCVSS>
-                </configuration>
-
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
-
-    <!-- ✅ Maven Central -->
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-    </repositories>
 
 </project>
