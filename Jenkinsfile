@@ -8,8 +8,8 @@ pipeline {
 
     environment {
         APP_NAME       = 'devsecops-app'
-        APP_PORT       = '8082'          // port exposé sur l'hôte
-        CONTAINER_PORT = '8080'          // port interne Spring Boot
+        APP_PORT       = '8082'
+        CONTAINER_PORT = '8080'
         IMAGE_TAG      = 'devsecops-springboot:latest'
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL    = 'http://192.168.56.10:3000'
@@ -17,21 +17,14 @@ pipeline {
 
     stages {
 
-        /* --------------------------------------------------
-           CLONE REPOSITORY
-        -------------------------------------------------- */
         stage('Clone Repository') {
             steps {
                 retry(3) {
-                    // 🔔 Note : l’URL GitHub actuelle est vide → à remplacer par le vrai repo privé dès qu’il existe
                     git branch: 'main', url: 'https://github.com/khaskhoussyachtar/devsecops.git'
                 }
             }
         }
 
-        /* --------------------------------------------------
-           SECRETS SCAN (GITLEAKS)
-        -------------------------------------------------- */
         stage('Secrets Scan') {
             steps {
                 sh '''
@@ -53,24 +46,14 @@ pipeline {
                 '''
             }
             post {
-                always {
-                    archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
-                }
+                always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true }
             }
         }
 
-        /* --------------------------------------------------
-           BUILD & TEST
-        -------------------------------------------------- */
         stage('Build & Test') {
-            steps {
-                sh 'mvn clean verify -U'
-            }
+            steps { sh 'mvn clean verify -U' }
         }
 
-        /* --------------------------------------------------
-           SONARQUBE SAST ANALYSIS
-        -------------------------------------------------- */
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
@@ -86,9 +69,6 @@ pipeline {
             }
         }
 
-        /* --------------------------------------------------
-           DEPLOY TO NEXUS
-        -------------------------------------------------- */
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([usernamePassword(
@@ -114,69 +94,19 @@ EOF
             }
         }
 
-        /* --------------------------------------------------
-           DOCKER BUILD
-        -------------------------------------------------- */
         stage('Build Docker Image') {
-            steps {
-                sh '''
-                    echo "✅ Building Docker image: ${IMAGE_TAG}"
-                    docker build -t ${IMAGE_TAG} .
-                '''
-            }
+            steps { sh 'docker build -t ${IMAGE_TAG} .' }
         }
 
-        /* --------------------------------------------------
-           RUN APP — PORT 8082
-        -------------------------------------------------- */
         stage('Run Container') {
             steps {
                 sh '''
                     docker rm -f ${APP_NAME} 2>/dev/null || true
-                    echo "✅ Starting container ${APP_NAME} on port ${APP_PORT}..."
-                    docker run -d \
-                        --name ${APP_NAME} \
-                        -p ${APP_PORT}:${CONTAINER_PORT} \
-                        ${IMAGE_TAG}
+                    docker run -d --name ${APP_NAME} -p ${APP_PORT}:${CONTAINER_PORT} ${IMAGE_TAG}
                 '''
             }
         }
 
-        /* --------------------------------------------------
-           WAIT FOR APP READY (Health check)
-        -------------------------------------------------- */
-        stage('Wait for App Readiness') {
-            steps {
-                script {
-                    def maxWait = 60
-                    def waited = 0
-                    def interval = 5
-                    def ready = false
-
-                    while (waited < maxWait && !ready) {
-                        echo "⏳ Waiting for app health (${waited}s)..."
-                        def exitCode = sh(
-                            script: "curl -sf http://localhost:${APP_PORT}/actuator/health | grep -q '\"status\":\"UP\"'",
-                            returnStatus: true
-                        )
-                        if (exitCode == 0) {
-                            echo "✅ App is UP"
-                            ready = true
-                        } else {
-                            sleep interval
-                            waited += interval
-                        }
-                    }
-                    if (!ready) {
-                        error("❌ App did not become healthy in ${maxWait}s")
-                    }
-                }
-            }
-        }
-
-        /* --------------------------------------------------
-           PROMETHEUS ENDPOINT CHECK
-        -------------------------------------------------- */
         stage('Prometheus Metrics Check') {
             steps {
                 script {
@@ -210,9 +140,6 @@ EOF
             }
         }
 
-        /* --------------------------------------------------
-           PROMETHEUS SCRAPE STATUS CHECK (via API)
-        -------------------------------------------------- */
         stage('Prometheus Scrape Validation') {
             steps {
                 script {
@@ -223,60 +150,33 @@ EOF
                               select(.scrapeUrl | contains(":${APP_PORT}")) | 
                               .health'
                     """
-                    def healthStatus = sh(
-                        script: query,
-                        returnStdout: true
-                    ).trim()
+                    def healthStatus = sh(script: query, returnStdout: true).trim()
 
                     if (healthStatus == "up") {
                         echo "✅ Prometheus is scraping the app successfully"
-                    } else if (healthStatus == "down") {
-                        echo "⚠️ Prometheus target is DOWN — possible config issue"
-                        currentBuild.result = 'UNSTABLE'
-                    } else if (healthStatus.empty) {
-                        echo "❓ No target found on port ${APP_PORT} — check prometheus.yml"
-                        currentBuild.result = 'UNSTABLE'
                     } else {
-                        echo "❓ Unexpected health status: '${healthStatus}'"
+                        echo "⚠️ Prometheus scrape issue"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
         }
 
-        /* --------------------------------------------------
-           GRAFANA DASHBOARD (Info/Import)
-        -------------------------------------------------- */
         stage('Grafana Dashboard') {
             steps {
                 echo "📊 Grafana URL: ${GRAFANA_URL}"
-                echo "   → Targets: ${PROMETHEUS_URL}/targets?search="
-                // 🔔 L’import auto est désactivé ici car ton endpoint actuel échoue (403/401 sans auth)
-                // Si tu configures une clé API Grafana, je peux ajouter l’import auto.
             }
         }
     }
 
-    /* --------------------------------------------------
-       CLEANUP
-    -------------------------------------------------- */
     post {
         always {
             echo '🧹 Cleanup...'
-            sh '''
-                docker rm -f ${APP_NAME} 2>/dev/null || true
-                rm -f settings-temp.xml 2>/dev/null || true
-            '''
+            sh 'docker rm -f ${APP_NAME} 2>/dev/null || true; rm -f settings-temp.xml 2>/dev/null'
             cleanWs()
         }
-        success {
-            echo '✅ PIPELINE SUCCESSFUL ✅'
-        }
-        unstable {
-            echo '⚠️ PIPELINE COMPLETED WITH WARNINGS (e.g., observability checks)'
-        }
-        failure {
-            echo '❌ PIPELINE FAILED ❌'
-        }
+        success { echo '✅ PIPELINE SUCCESSFUL ✅' }
+        unstable { echo '⚠️ PIPELINE COMPLETED WITH WARNINGS' }
+        failure { echo '❌ PIPELINE FAILED ❌' }
     }
 }
