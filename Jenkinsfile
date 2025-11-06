@@ -57,14 +57,14 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                    sh '''
+                    sh """
                         mvn sonar:sonar \
                             -Dsonar.projectKey=devsecops \
                             -Dsonar.host.url=http://192.168.56.10:9000 \
                             -Dsonar.login=$SONAR_TOKEN \
                             -Dsonar.coverage.exclusions=**/* \
                             -Dsonar.qualitygate.wait=true
-                    '''
+                    """
                 }
             }
         }
@@ -100,40 +100,42 @@ EOF
 
         stage('Run Container') {
             steps {
-                sh '''
+                sh """
                     docker rm -f ${APP_NAME} 2>/dev/null || true
                     docker run -d --name ${APP_NAME} -p ${APP_PORT}:${CONTAINER_PORT} ${IMAGE_TAG}
-                '''
+                """
             }
         }
 
         stage('Prometheus Metrics Check') {
             steps {
                 script {
-                    def endpoints = ['/actuator/prometheus', '/prometheus']
+                    def endpoints = [
+                        "http://localhost:${APP_PORT}/actuator/prometheus",
+                        "http://192.168.56.10:8081/service/metrics/prometheus"
+                    ]
                     def success = false
                     def attempts = 3
+                    def interval = 5
 
                     for (int i = 0; i < attempts; i++) {
-                        echo "📡 Attempt ${i + 1}/${attempts} — checking endpoints..."
-
+                        echo "📡 Attempt ${i+1}/${attempts} — checking endpoints..."
                         for (endpoint in endpoints) {
-                            def url = "http://localhost:${APP_PORT}${endpoint}"
-                            echo "  → ${url}"
-                            def code = sh(script: "curl -sf ${url} > /dev/null 2>&1; echo \$?", returnStdout: true).trim()
+                            echo "  → ${endpoint}"
+                            def code = sh(script: "curl -sf ${endpoint} > /dev/null 2>&1; echo \$?", returnStdout: true).trim()
                             if (code == "0") {
                                 echo "✅ Success: ${endpoint} responded"
                                 success = true
-                                break
+                            } else {
+                                echo "❌ Failed: ${endpoint} did not respond"
                             }
                         }
-
                         if (success) break
-                        sleep 3
+                        sleep interval
                     }
 
                     if (!success) {
-                        echo "❌ None of the Prometheus endpoints are reachable"
+                        echo "⚠️ None of the Prometheus endpoints are reachable"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
@@ -144,13 +146,10 @@ EOF
             steps {
                 script {
                     echo "🔍 Verifying Prometheus scrape target status..."
-                    def query = """
-                        curl -sf ${PROMETHEUS_URL}/api/v1/targets | \\
-                        jq -r '.data.activeTargets[] | 
-                              select(.scrapeUrl | contains(":${APP_PORT}")) | 
-                              .health'
-                    """
-                    def healthStatus = sh(script: query, returnStdout: true).trim()
+                    def healthStatus = sh(
+                        script: "curl -sf ${PROMETHEUS_URL}/api/v1/targets | jq -r '.data.activeTargets[] | select(.scrapeUrl | contains(\":${APP_PORT}\")) | .health'",
+                        returnStdout: true
+                    ).trim()
 
                     if (healthStatus == "up") {
                         echo "✅ Prometheus is scraping the app successfully"
@@ -172,7 +171,7 @@ EOF
     post {
         always {
             echo '🧹 Cleanup...'
-            sh 'docker rm -f ${APP_NAME} 2>/dev/null || true; rm -f settings-temp.xml 2>/dev/null'
+            sh 'docker rm -f ${APP_NAME} 2>/dev/null; rm -f settings-temp.xml 2>/dev/null'
             cleanWs()
         }
         success { echo '✅ PIPELINE SUCCESSFUL ✅' }
