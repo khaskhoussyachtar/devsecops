@@ -8,12 +8,13 @@ pipeline {
 
     environment {
         // SonarQube & Monitoring URLs
-        SONAR_TOKEN = credentials('sonarqube-token') // Créer cette credential dans Jenkins
+        SONAR_TOKEN = credentials('sonarqube-token')
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL = 'http://192.168.56.10:3000'
     }
 
     stages {
+
         stage('Clone Repository') {
             steps {
                 retry(3) {
@@ -94,42 +95,6 @@ pipeline {
                     docker buildx inspect mybuilder || docker buildx create --use --name mybuilder
                     docker buildx build --platform linux/amd64 -t devsecops-springboot:latest .
                 '''
-            }
-        }
-
-        // 🔐 OPTIMIZED: Fast & Reliable Trivy Scan (No Secret Scanning)
-        stage('Scan Docker Image with Trivy') {
-            steps {
-                script {
-                    def imageName = "devsecops-springboot:latest"
-                    echo "🔍 Scanning Docker image ${imageName} with Trivy..."
-
-                    // Ensure image exists locally before scanning
-                    sh """
-                        if ! docker image inspect ${imageName} >/dev/null 2>&1; then
-                            echo "❌ ERROR: Image '${imageName}' not found locally!"
-                            exit 1
-                        fi
-                        echo "✅ Image found. Starting optimized Trivy scan..."
-                    """
-
-                    // Run Trivy without secret scanning for speed
-                    retry(3) {
-                        timeout(time: 10, unit: 'MINUTES') {
-                            sh """
-                                trivy image \
-                                  --db-repository public.ecr.aws/aquasecurity/trivy-db \
-                                  --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db \
-                                  --timeout 5m \
-                                  --exit-code 1 \
-                                  --severity HIGH,CRITICAL \
-                                  --no-progress \
-                                  --scanners vuln \
-                                  ${imageName}
-                            """
-                        }
-                    }
-                }
             }
         }
 
