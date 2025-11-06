@@ -2,10 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="
-         http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+          http://maven.apache.org/POM/4.0.0
+          http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.3</version>
+        <relativePath/>
+    </parent>
 
     <groupId>com.devsecops</groupId>
     <artifactId>devsecops</artifactId>
@@ -14,12 +21,11 @@
 
     <properties>
         <java.version>17</java.version>
-        <maven.compiler.release>17</maven.compiler.release>
         <dependency-check.version>9.2.0</dependency-check.version>
     </properties>
 
     <dependencies>
-        <!-- Exemple : Spring Web -->
+        <!-- Spring Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -29,7 +35,7 @@
     <build>
         <plugins>
 
-            <!-- ✅ COMPILATION JAVA -->
+            <!-- Compiler Java -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -47,13 +53,12 @@
                 <configuration>
                     <failBuildOnCVSS>7</failBuildOnCVSS>
 
-                    <!-- ✅ Utilise la variable d’environnement -->
+                    <!-- ✅ Utilise la variable d'environnement -->
                     <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
 
                     <autoUpdate>true</autoUpdate>
                     <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
                     <outputDirectory>${project.build.directory}</outputDirectory>
-
                 </configuration>
 
                 <executions>
