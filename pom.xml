@@ -97,17 +97,29 @@
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
-                        <goals><goal>prepare-agent</goal></goals>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
                     </execution>
                     <execution>
                         <id>report</id>
                         <phase>verify</phase>
-                        <goals><goal>report</goal></goals>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
 
         </plugins>
     </build>
+
+    <!-- ✅ Added to avoid "repository element missing" -->
+    <distributionManagement>
+        <repository>
+            <id>local-repo</id>
+            <url>file://${project.basedir}/local-repo</url>
+        </repository>
+    </distributionManagement>
 
 </project>
