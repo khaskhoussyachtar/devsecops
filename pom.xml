@@ -108,28 +108,30 @@
                 </executions>
             </plugin>
 
-            <!-- ✅ OWASP Dependency Check — MODE OFFLINE TOTAL -->
+            <!-- ✅ OWASP Dependency Check — FIRST RUN (Download DB) -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>${dependency-check.version}</version>
 
                 <configuration>
-                    <!-- ✅ Désactiver totalement NVD -->
-                    <nvdApiEnabled>false</nvdApiEnabled>
-                    <nvdDatafeedEnabled>false</nvdDatafeedEnabled>
-                    <nvdEnabled>false</nvdEnabled>
+                    <!-- ✅ Activer NVD pour télécharger la DB -->
+                    <nvdEnabled>true</nvdEnabled>
+                    <nvdApiEnabled>true</nvdApiEnabled>
 
-                    <!-- ✅ Désactiver sources NVD/CISA problématiques -->
+                    <!-- ✅ TA clé API -->
+                    <nvdApiKey>0ee6b2d2-d4aa-4ff9-89b8-e8c9bb262bc3</nvdApiKey>
+
+                    <!-- ✅ Autoriser mise à jour (seulement première fois) -->
+                    <autoUpdate>true</autoUpdate>
+
+                    <!-- ✅ Désactiver sources secondaires -->
                     <cisaKevEnabled>false</cisaKevEnabled>
                     <hostedSuppressionsEnabled>false</hostedSuppressionsEnabled>
 
-                    <!-- ✅ Garder seulement OSS Index + RetireJS -->
+                    <!-- ✅ Garder OSS Index + RetireJS -->
                     <ossIndexEnabled>true</ossIndexEnabled>
                     <retireJsEnabled>true</retireJsEnabled>
-
-                    <!-- ✅ Pas de mise à jour, pas de download -->
-                    <autoUpdate>false</autoUpdate>
 
                     <!-- ✅ Répertoires -->
                     <dataDirectory>${project.build.directory}/dependency-check</dataDirectory>
