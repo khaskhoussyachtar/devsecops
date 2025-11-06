@@ -47,14 +47,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ✅ TESTS JUNIT 5 -->
+        <!-- ✅ TEST JUNIT 5 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Optional Jacoco test agent -->
+        <!-- Jacoco Agent (optionnel) -->
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
@@ -68,7 +68,7 @@
     <build>
         <plugins>
 
-            <!-- Compiler -->
+            <!-- ✅ Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -79,13 +79,13 @@
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot -->
+            <!-- ✅ Spring Boot Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- ✅ Tests -->
+            <!-- ✅ Test Plugin -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
@@ -99,17 +99,21 @@
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
-                        <goals><goal>prepare-agent</goal></goals>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
                     </execution>
                     <execution>
                         <id>report</id>
                         <phase>verify</phase>
-                        <goals><goal>report</goal></goals>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- ✅ OWASP Dependency Check (VERSION SANS NVD API KEY) -->
+            <!-- ✅ OWASP Dependency Check — VERSION 100% SANS NVD -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
@@ -117,28 +121,33 @@
 
                 <configuration>
 
-                    <!-- ✅ Désactive NVD car nécessite API KEY -->
+                    <!-- ✅ Désactiver totalement NVD -->
                     <nvdApiKey></nvdApiKey>
+                    <nvdApiEnabled>false</nvdApiEnabled>
                     <nvdDatafeedEnabled>false</nvdDatafeedEnabled>
+                    <nvdEnabled>false</nvdEnabled>
 
-                    <!-- ✅ Active uniquement les sources gratuites (fonctionnent sans clé) -->
+                    <!-- ✅ Activer seulement les sources gratuites -->
                     <ossIndexEnabled>true</ossIndexEnabled>
                     <retireJsEnabled>true</retireJsEnabled>
+                    <centralAnalyzerEnabled>true</centralAnalyzerEnabled>
 
                     <!-- ✅ Dossiers -->
                     <autoUpdate>true</autoUpdate>
                     <dataDirectory>${project.build.directory}/dependency-check</dataDirectory>
                     <outputDirectory>${project.build.directory}</outputDirectory>
+                    <format>HTML</format>
 
                     <!-- ✅ Politique de fail -->
                     <failBuildOnCVSS>10</failBuildOnCVSS>
-                    <format>HTML</format>
                 </configuration>
 
                 <executions>
                     <execution>
                         <phase>verify</phase>
-                        <goals><goal>check</goal></goals>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -146,7 +155,7 @@
         </plugins>
     </build>
 
-    <!-- ✅ Maven Central -->
+    <!-- ✅ MAVEN CENTRAL -->
     <repositories>
         <repository>
             <id>central</id>
