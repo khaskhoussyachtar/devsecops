@@ -46,7 +46,7 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- ✅ Database - FIXED -->
+        <!-- ✅ Database -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
@@ -75,6 +75,7 @@
         </dependency>
     </dependencies>
 
+    <!-- ✅ Build Section -->
     <build>
         <plugins>
 
@@ -88,7 +89,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot Maven Plugin -->
+            <!-- Spring Boot -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -102,7 +103,7 @@
                 </executions>
             </plugin>
 
-            <!-- Surefire & Failsafe -->
+            <!-- Surefire -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M7</version>
@@ -113,6 +114,7 @@
                 </configuration>
             </plugin>
 
+            <!-- Failsafe -->
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.0.0-M7</version>
@@ -153,6 +155,26 @@
                 </executions>
             </plugin>
 
+            <!-- ✅ ✅ OWASP Dependency Check -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.2.0</version>
+                <configuration>
+                    <nvdApiKey>04823a67-09d4-4014-b2a0-eaac73c47f28</nvdApiKey>
+                    <format>HTML</format>
+                    <skip>false</skip>
+                    <failOnError>false</failOnError>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- SonarQube -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
@@ -160,7 +182,7 @@
                 <version>${sonar.maven.plugin.version}</version>
             </plugin>
 
-            <!-- Maven Deploy -->
+            <!-- Deploy -->
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>3.0.0-M1</version>
