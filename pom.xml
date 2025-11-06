@@ -1,109 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="
+         http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.devsecops</groupId>
     <artifactId>devsecops</artifactId>
     <version>1.0.0</version>
-    <name>devsecops</name>
+    <packaging>jar</packaging>
 
-    <!-- ✅ Version Java -->
     <properties>
         <java.version>17</java.version>
-        <spring-boot.version>3.3.3</spring-boot.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>17</maven.compiler.release>
+        <dependency-check.version>9.2.0</dependency-check.version>
     </properties>
 
-    <!-- ✅ DEPENDANCES -->
     <dependencies>
-
-        <!-- Spring Boot Web -->
+        <!-- Exemple : Spring Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- Tests -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
-
-    <!-- ✅ DEPENDENCY MANAGEMENT -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-
-    <!-- ✅ BUILD -->
     <build>
         <plugins>
 
-            <!-- ✅ Compiler Java 17 -->
+            <!-- ✅ COMPILATION JAVA -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <release>${java.version}</release>
+                    <release>17</release>
                 </configuration>
             </plugin>
 
-            <!-- ✅ Spring Boot Plugin -->
+            <!-- ✅ OWASP DEPENDENCY CHECK -->
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${dependency-check.version}</version>
+                <configuration>
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
+
+                    <!-- ✅ Utilise la variable d’environnement -->
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+
+                    <autoUpdate>true</autoUpdate>
+                    <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
-           <!-- ✅✅ OWASP Dependency Check (FIXED) -->
-<plugin>
-    <groupId>org.owasp</groupId>
-    <artifactId>dependency-check-maven</artifactId>
-    <version>9.2.0</version>
-
-    <configuration>
-        <!-- ✅ Désactiver totalement les updates -->
-        <autoupdate>false</autoupdate>
-        <dataMirroringEnabled>false</dataMirroringEnabled>
-        <cisaUseAllowed>false</cisaUseAllowed>
-
-        <!-- ✅ Aucun NVD API key -->
-        <nvdApiKey></nvdApiKey>
-
-        <!-- ✅ Continuer même s’il y a une erreur -->
-        <failOnError>false</failOnError>
-
-        <!-- ✅ Sortie HTML -->
-        <formats>
-            <format>HTML</format>
-        </formats>
-    </configuration>
-
-    <executions>
-        <execution>
-            <goals>
-                <goal>check</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
-
+        </plugins>
+    </build>
 
 </project>
