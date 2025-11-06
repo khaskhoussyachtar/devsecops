@@ -13,6 +13,7 @@ pipeline {
         IMAGE_TAG      = 'devsecops-springboot:latest'
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL    = 'http://192.168.56.10:3000'
+        EXTERNAL_PROMETHEUS_ENDPOINT = 'http://192.168.56.10:8081/service/metrics/prometheus'
     }
 
     stages {
@@ -45,14 +46,10 @@ pipeline {
                     fi
                 '''
             }
-            post {
-                always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true }
-            }
+            post { always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true } }
         }
 
-        stage('Build & Test') {
-            steps { sh 'mvn clean verify -U' }
-        }
+        stage('Build & Test') { steps { sh 'mvn clean verify -U' } }
 
         stage('SonarQube Analysis') {
             steps {
@@ -94,9 +91,7 @@ EOF
             }
         }
 
-        stage('Build Docker Image') {
-            steps { sh 'docker build -t ${IMAGE_TAG} .' }
-        }
+        stage('Build Docker Image') { steps { sh 'docker build -t ${IMAGE_TAG} .' } }
 
         stage('Run Container') {
             steps {
@@ -110,32 +105,23 @@ EOF
         stage('Prometheus Metrics Check') {
             steps {
                 script {
-                    def endpoints = [
-                        "http://localhost:${APP_PORT}/actuator/prometheus",
-                        "http://192.168.56.10:8081/service/metrics/prometheus"
-                    ]
-                    def success = false
+                    def endpoint = "${EXTERNAL_PROMETHEUS_ENDPOINT}"
                     def attempts = 3
-                    def interval = 5
-
+                    def success = false
                     for (int i = 0; i < attempts; i++) {
-                        echo "📡 Attempt ${i+1}/${attempts} — checking endpoints..."
-                        for (endpoint in endpoints) {
-                            echo "  → ${endpoint}"
-                            def code = sh(script: "curl -sf ${endpoint} > /dev/null 2>&1; echo \$?", returnStdout: true).trim()
-                            if (code == "0") {
-                                echo "✅ Success: ${endpoint} responded"
-                                success = true
-                            } else {
-                                echo "❌ Failed: ${endpoint} did not respond"
-                            }
+                        echo "📡 Attempt ${i+1}/${attempts} — checking endpoint: ${endpoint}"
+                        def code = sh(script: "curl -sf ${endpoint} > /dev/null 2>&1; echo \$?", returnStdout: true).trim()
+                        if (code == "0") {
+                            echo "✅ Success: endpoint responded"
+                            success = true
+                            break
+                        } else {
+                            echo "❌ Failed: endpoint did not respond"
+                            sleep 5
                         }
-                        if (success) break
-                        sleep interval
                     }
-
                     if (!success) {
-                        echo "⚠️ None of the Prometheus endpoints are reachable"
+                        echo "⚠️ Prometheus endpoint unreachable"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
@@ -162,9 +148,7 @@ EOF
         }
 
         stage('Grafana Dashboard') {
-            steps {
-                echo "📊 Grafana URL: ${GRAFANA_URL}"
-            }
+            steps { echo "📊 Grafana URL: ${GRAFANA_URL}" }
         }
     }
 
