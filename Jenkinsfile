@@ -7,10 +7,10 @@ pipeline {
     }
 
     environment {
-        // ✅ On change le port pour éviter le conflit avec Nexus (8081)
-        APP_PORT = "8082"   // ← 8082 est libre (8080:Jenkins, 8081:Nexus, 9000:SonarQube)
+        // ✅ Port libre pour l'app
+        APP_PORT = "8082"
         
-        // Variables d’URL (sans credentials ici)
+        // URLs des services (sans credentials)
         PROMETHEUS_URL = 'http://192.168.56.10:9090'
         GRAFANA_URL = 'http://192.168.56.10:3000'
     }
@@ -29,19 +29,16 @@ pipeline {
         }
 
         /* --------------------------------------------------
-           SECRETS SCAN (GITLEAKS) — SÉCURISÉ
+           SECRETS SCAN (GITLEAKS)
         -------------------------------------------------- */
         stage('Secrets Scan') {
             steps {
                 sh '''
                     echo "🔍 Running Gitleaks..."
                     gitleaks detect --source . --no-banner --report-path gitleaks-report.json
-                    # Gitleaks exit code = 1 si leak trouvé → on capture proprement
                     EXIT_CODE=$?
                     if [ $EXIT_CODE -eq 1 ]; then
                         echo "⚠️ Secrets found — see gitleaks-report.json"
-                        # Tu peux bloquer ici si strict :
-                        # exit 1
                     elif [ $EXIT_CODE -ne 0 ]; then
                         echo "🚨 Gitleaks failed (exit $EXIT_CODE)"
                         exit $EXIT_CODE
@@ -67,16 +64,15 @@ pipeline {
         }
 
         /* --------------------------------------------------
-           SONARQUBE SAST ANALYSIS — ✅ FIX SÉCURITÉ
+           SONARQUBE SAST ANALYSIS
         -------------------------------------------------- */
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    // 🔐 Utilise SONAR_TOKEN via variable d'environnement (pas interpolation Groovy)
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         mvn sonar:sonar \
                             -Dsonar.projectKey=devsecops \
-                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.host.url=http://192.168.56.10:9000 \
                             -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
@@ -84,7 +80,7 @@ pipeline {
         }
 
         /* --------------------------------------------------
-           DEPLOY TO NEXUS — ✅ FIX SÉCURITÉ
+           DEPLOY TO NEXUS
         -------------------------------------------------- */
         stage('Deploy to Nexus') {
             steps {
@@ -93,7 +89,6 @@ pipeline {
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    // 🔐 Écrire settings avec variables shell (pas Groovy)
                     sh '''
                         cat > settings-temp.xml <<EOF
 <settings>
@@ -106,7 +101,6 @@ pipeline {
   </servers>
 </settings>
 EOF
-
                         mvn deploy -DskipTests -s settings-temp.xml
                     '''
                 }
@@ -126,7 +120,7 @@ EOF
         }
 
         /* --------------------------------------------------
-           RUN APP — ✅ PORT 8082 (LIBRE)
+           RUN APP — PORT 8082
         -------------------------------------------------- */
         stage('Run Container') {
             steps {
@@ -137,8 +131,6 @@ EOF
                         --name devsecops-app \
                         -p ${APP_PORT}:8080 \
                         devsecops-springboot:latest
-
-                    # Attendre que l'app soit prête (optionnel mais utile pour DAST)
                     sleep 10
                 '''
             }
@@ -171,8 +163,7 @@ EOF
                     curl -s -X POST \
                         -H "Content-Type: application/json" \
                         -d \'{"dashboard": {"title": "DevSecOps Dashboard"}, "overwrite": true}\' \
-                        ${GRAFANA_URL}/api/dashboards/import \
-                        > /dev/null
+                        ${GRAFANA_URL}/api/dashboards/import > /dev/null
                     echo "✅ Dashboard import attempted"
                 '''
             }
