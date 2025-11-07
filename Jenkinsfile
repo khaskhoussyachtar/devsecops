@@ -7,12 +7,13 @@ pipeline {
     }
 
     environment {
-        APP_NAME       = 'devsecops-app'
-        APP_PORT       = '8082'
-        CONTAINER_PORT = '8080'
-        IMAGE_TAG      = 'devsecops-springboot:latest'
-        PROMETHEUS_URL = 'http://192.168.56.10:9090'
-        GRAFANA_URL    = 'http://192.168.56.10:3000'
+        APP_NAME        = 'devsecops-app'
+        APP_PORT        = '8082'
+        CONTAINER_PORT  = '8080'
+        IMAGE_TAG       = 'devsecops-springboot:latest'
+        PROMETHEUS_URL  = 'http://192.168.56.10:9090'
+        GRAFANA_URL     = 'http://192.168.56.10:3000'
+        EMAIL_RECIPIENT = 'achtar.khaskhoussy@esprit.tn'
     }
 
     stages {
@@ -92,9 +93,7 @@ pipeline {
          * 6️⃣ BUILD DOCKER IMAGE
          * ============================= */
         stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t ${IMAGE_TAG} .'
-            }
+            steps { sh 'docker build -t ${IMAGE_TAG} .' }
         }
 
         /* =============================
@@ -152,7 +151,7 @@ EOF
         }
 
         /* =============================
-         * 🔟 DAST — OWASP ZAP SCAN
+         * 🔟 DAST — OWASP ZAP
          * ============================= */
         stage('DAST Scan (OWASP ZAP)') {
             steps {
@@ -188,7 +187,7 @@ EOF
     }
 
     /* =============================
-     * 🔚 POST ACTIONS
+     * 🔚 POST ACTIONS (EMAILS)
      * ============================= */
     post {
         always {
@@ -196,8 +195,39 @@ EOF
             sh 'docker rm -f ${APP_NAME} 2>/dev/null; rm -f settings-temp.xml 2>/dev/null'
             cleanWs()
         }
-        success { echo '✅ PIPELINE SUCCESSFUL ✅' }
-        unstable { echo '⚠️ PIPELINE COMPLETED WITH WARNINGS' }
-        failure { echo '❌ PIPELINE FAILED ❌' }
+
+        success {
+            echo '✅ PIPELINE SUCCESSFUL ✅'
+            emailext(
+                subject: "✅ Pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                ✅ Pipeline SUCCESSFUL for *${APP_NAME}*  
+                ───────────────────────────────  
+                • Job: ${env.JOB_NAME}  
+                • Build: ${env.BUILD_NUMBER}  
+                • Reports: Gitleaks, Trivy, OWASP ZAP  
+                • Grafana Dashboard: ${GRAFANA_URL}  
+                ───────────────────────────────  
+                ✔ All security scans completed successfully!
+                """,
+                attachLog: true,
+                attachmentsPattern: 'gitleaks-report.json,trivy-fs-report.txt,trivy-image-report.txt,zap-report.html',
+                to: "${EMAIL_RECIPIENT}"
+            )
+        }
+
+        failure {
+            echo '❌ PIPELINE FAILED ❌'
+            emailext(
+                subject: "❌ Pipeline FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                ❌ Pipeline FAILED for *${APP_NAME}*  
+                ───────────────────────────────  
+                Please review the Jenkins console logs and attached reports.  
+                """,
+                attachLog: true,
+                to: "${EMAIL_RECIPIENT}"
+            )
+        }
     }
 }
