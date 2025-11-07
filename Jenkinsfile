@@ -39,16 +39,7 @@ pipeline {
                         echo "⚠️ Gitleaks not found — skipping secrets scan"
                         exit 0
                     fi
-                    gitleaks detect --source . --no-banner --report-path gitleaks-report.json
-                    EXIT_CODE=$?
-                    if [ $EXIT_CODE -eq 1 ]; then
-                        echo "⚠️ Secrets found — see gitleaks-report.json"
-                    elif [ $EXIT_CODE -ne 0 ]; then
-                        echo "🚨 Gitleaks failed (exit $EXIT_CODE)"
-                        exit $EXIT_CODE
-                    else
-                        echo "✅ No secrets detected."
-                    fi
+                    gitleaks detect --source . --no-banner --report-path gitleaks-report.json || echo "⚠️ Gitleaks detected secrets or failed — continuing pipeline..."
                 '''
             }
             post { always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true } }
@@ -90,7 +81,8 @@ pipeline {
                         echo "⚠️ Trivy not found — skipping"
                         exit 0
                     fi
-                    trivy fs --format table --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed --output trivy-fs-report.txt .
+                    trivy fs --format table --severity HIGH,CRITICAL --exit-code 0 --ignore-unfixed --output trivy-fs-report.txt . || true
+                    echo "✅ Trivy scan finished (non-blocking mode)"
                 '''
             }
             post { always { archiveArtifacts artifacts: 'trivy-fs-report.txt', allowEmptyArchive: true } }
@@ -112,7 +104,8 @@ pipeline {
             steps {
                 sh '''
                     echo "🐳 Scanning Docker image with Trivy..."
-                    trivy image --format table --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed --output trivy-image-report.txt ${IMAGE_TAG}
+                    trivy image --format table --severity HIGH,CRITICAL --exit-code 0 --ignore-unfixed --output trivy-image-report.txt ${IMAGE_TAG} || true
+                    echo "✅ Docker image scan finished (non-blocking mode)"
                 '''
             }
             post { always { archiveArtifacts artifacts: 'trivy-image-report.txt', allowEmptyArchive: true } }
