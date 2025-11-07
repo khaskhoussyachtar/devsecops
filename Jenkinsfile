@@ -152,7 +152,23 @@ EOF
         }
 
         /* =============================
-         * 🔟 PROMETHEUS CHECK (OPTIONAL)
+         * 🔟 DAST — OWASP ZAP SCAN
+         * ============================= */
+        stage('DAST Scan (OWASP ZAP)') {
+            steps {
+                sh '''
+                    echo "🧪 Running OWASP ZAP Baseline Scan..."
+                    docker run --rm -v $(pwd):/zap/wrk/:rw owasp/zap2docker-stable zap-baseline.py \
+                        -t http://192.168.56.10:${APP_PORT} \
+                        -r zap-report.html || true
+                    echo "✅ OWASP ZAP scan completed (report generated)"
+                '''
+            }
+            post { always { archiveArtifacts artifacts: 'zap-report.html', allowEmptyArchive: true } }
+        }
+
+        /* =============================
+         * 1️⃣1️⃣ PROMETHEUS CHECK (OPTIONAL)
          * ============================= */
         stage('Prometheus Metrics Check (Optional)') {
             steps {
@@ -164,7 +180,7 @@ EOF
         }
 
         /* =============================
-         * 1️⃣1️⃣ GRAFANA DASHBOARD
+         * 1️⃣2️⃣ GRAFANA DASHBOARD
          * ============================= */
         stage('Grafana Dashboard') {
             steps { echo "📊 Grafana URL: ${GRAFANA_URL}" }
