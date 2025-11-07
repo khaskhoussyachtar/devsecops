@@ -13,14 +13,10 @@ pipeline {
         IMAGE_TAG       = 'devsecops-springboot:latest'
         PROMETHEUS_URL  = 'http://192.168.56.10:9090'
         GRAFANA_URL     = 'http://192.168.56.10:3000'
-        EMAIL_RECIPIENT = 'achtar.khaskhoussy@esprit.tn'
     }
 
     stages {
 
-        /* =============================
-         * 1️⃣ CLONE DU REPOSITORY
-         * ============================= */
         stage('Clone Repository') {
             steps {
                 retry(3) {
@@ -29,9 +25,6 @@ pipeline {
             }
         }
 
-        /* =============================
-         * 2️⃣ SECRETS SCAN — GITLEAKS
-         * ============================= */
         stage('Secrets Scan') {
             steps {
                 sh '''
@@ -46,16 +39,10 @@ pipeline {
             post { always { archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true } }
         }
 
-        /* =============================
-         * 3️⃣ BUILD & TEST — MAVEN
-         * ============================= */
         stage('Build & Test') {
             steps { sh 'mvn clean verify -U' }
         }
 
-        /* =============================
-         * 4️⃣ ANALYSE SONARQUBE (SAST)
-         * ============================= */
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
@@ -71,9 +58,6 @@ pipeline {
             }
         }
 
-        /* =============================
-         * 5️⃣ SCAN DES DÉPENDANCES — TRIVY (SCA)
-         * ============================= */
         stage('Dependencies Scan (Trivy SCA)') {
             steps {
                 sh '''
@@ -89,16 +73,10 @@ pipeline {
             post { always { archiveArtifacts artifacts: 'trivy-fs-report.txt', allowEmptyArchive: true } }
         }
 
-        /* =============================
-         * 6️⃣ BUILD DOCKER IMAGE
-         * ============================= */
         stage('Build Docker Image') {
             steps { sh 'docker build -t ${IMAGE_TAG} .' }
         }
 
-        /* =============================
-         * 7️⃣ SCAN DE L’IMAGE — TRIVY
-         * ============================= */
         stage('Docker Image Scan (Trivy)') {
             steps {
                 sh '''
@@ -110,9 +88,6 @@ pipeline {
             post { always { archiveArtifacts artifacts: 'trivy-image-report.txt', allowEmptyArchive: true } }
         }
 
-        /* =============================
-         * 8️⃣ DEPLOY TO NEXUS
-         * ============================= */
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([usernamePassword(
@@ -138,9 +113,6 @@ EOF
             }
         }
 
-        /* =============================
-         * 9️⃣ RUN CONTAINER
-         * ============================= */
         stage('Run Container') {
             steps {
                 sh '''
@@ -150,9 +122,6 @@ EOF
             }
         }
 
-        /* =============================
-         * 🔟 DAST — OWASP ZAP
-         * ============================= */
         stage('DAST Scan (OWASP ZAP)') {
             steps {
                 sh '''
@@ -166,9 +135,6 @@ EOF
             post { always { archiveArtifacts artifacts: 'zap-report.html', allowEmptyArchive: true } }
         }
 
-        /* =============================
-         * 1️⃣1️⃣ PROMETHEUS CHECK (OPTIONAL)
-         * ============================= */
         stage('Prometheus Metrics Check (Optional)') {
             steps {
                 sh '''
@@ -178,17 +144,11 @@ EOF
             }
         }
 
-        /* =============================
-         * 1️⃣2️⃣ GRAFANA DASHBOARD
-         * ============================= */
         stage('Grafana Dashboard') {
             steps { echo "📊 Grafana URL: ${GRAFANA_URL}" }
         }
     }
 
-    /* =============================
-     * 🔚 POST ACTIONS (EMAILS)
-     * ============================= */
     post {
         always {
             echo '🧹 Cleanup...'
@@ -198,36 +158,10 @@ EOF
 
         success {
             echo '✅ PIPELINE SUCCESSFUL ✅'
-            emailext(
-                subject: "✅ Pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-                ✅ Pipeline SUCCESSFUL for *${APP_NAME}*  
-                ───────────────────────────────  
-                • Job: ${env.JOB_NAME}  
-                • Build: ${env.BUILD_NUMBER}  
-                • Reports: Gitleaks, Trivy, OWASP ZAP  
-                • Grafana Dashboard: ${GRAFANA_URL}  
-                ───────────────────────────────  
-                ✔ All security scans completed successfully!
-                """,
-                attachLog: true,
-                attachmentsPattern: 'gitleaks-report.json,trivy-fs-report.txt,trivy-image-report.txt,zap-report.html',
-                to: "${EMAIL_RECIPIENT}"
-            )
         }
 
         failure {
             echo '❌ PIPELINE FAILED ❌'
-            emailext(
-                subject: "❌ Pipeline FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-                ❌ Pipeline FAILED for *${APP_NAME}*  
-                ───────────────────────────────  
-                Please review the Jenkins console logs and attached reports.  
-                """,
-                attachLog: true,
-                to: "${EMAIL_RECIPIENT}"
-            )
         }
     }
 }
