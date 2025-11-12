@@ -13,6 +13,7 @@ pipeline {
         IMAGE_TAG       = 'devsecops-springboot:latest'
         PROMETHEUS_URL  = 'http://192.168.56.10:9090'
         GRAFANA_URL     = 'http://192.168.56.10:3000'
+        SLACK_WEBHOOK   = 'https://hooks.slack.com/services/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'
     }
 
     stages {
@@ -147,6 +148,7 @@ EOF
         stage('Grafana Dashboard') {
             steps { echo "📊 Grafana URL: ${GRAFANA_URL}" }
         }
+
     }
 
     post {
@@ -158,10 +160,20 @@ EOF
 
         success {
             echo '✅ PIPELINE SUCCESSFUL ✅'
+            sh """
+            curl -X POST -H 'Content-type: application/json' \
+            --data '{\"text\":\"✅ Pipeline SUCCESS for ${APP_NAME}\"}' \
+            ${SLACK_WEBHOOK}
+            """
         }
 
         failure {
             echo '❌ PIPELINE FAILED ❌'
+            sh """
+            curl -X POST -H 'Content-type: application/json' \
+            --data '{\"text\":\"❌ Pipeline FAILED for ${APP_NAME}\"}' \
+            ${SLACK_WEBHOOK}
+            """
         }
     }
 }
