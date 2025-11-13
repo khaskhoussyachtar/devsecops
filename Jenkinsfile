@@ -60,6 +60,7 @@ pipeline {
             }
         }
 
+
         stage('Dependencies Scan (Trivy SCA)') {
             steps {
                 sh '''
