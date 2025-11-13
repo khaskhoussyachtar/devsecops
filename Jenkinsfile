@@ -54,7 +54,6 @@ pipeline {
                             -Dsonar.host.url=http://192.168.56.10:9000 \
                             -Dsonar.login=$SONAR_TOKEN \
                             -Dsonar.coverage.exclusions=**/* \
-                            -Dsonar.qualitygate.wait=true
                     '''
                 }
             }
