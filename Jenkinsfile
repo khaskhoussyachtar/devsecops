@@ -148,7 +148,7 @@ pipeline {
                     def exitCode = sh(script: '''
                         docker run --rm --user root --network host -v $(pwd):/zap/wrk:rw \
                         -t zaproxy/zap-stable zap-baseline.py \
-                        -t http://localhost \
+                        -t http://localhost:8082 \
                         -r zap_report.html -J zap_report.json
                     ''', returnStatus: true)
 
@@ -158,6 +158,10 @@ pipeline {
             
 
         }
+        }
+        post { always { archiveArtifacts artifacts: 'zap_report.html', allowEmptyArchive: true } }
+        }
+
 
         stage('Prometheus Metrics Check (Optional)') {
             steps {
