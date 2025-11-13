@@ -13,7 +13,8 @@ pipeline {
         IMAGE_TAG       = 'devsecops-springboot:latest'
         PROMETHEUS_URL  = 'http://192.168.56.10:9090'
         GRAFANA_URL     = 'http://192.168.56.10:3000'
-        SLACK_WEBHOOK   = 'https://hooks.slack.com/services/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'
+        SLACK_WEBHOOK   = 'https://hooks.slack.com/services/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'
+       
     }
 
     stages {
@@ -155,7 +156,7 @@ EOF
         always {
             echo '🧹 Cleanup...'
             sh 'docker rm -f ${APP_NAME} 2>/dev/null; rm -f settings-temp.xml 2>/dev/null'
-            cleanWs()
+            
         }
 
         success {
@@ -169,11 +170,11 @@ EOF
 
         failure {
             echo '❌ PIPELINE FAILED ❌'
-            sh """
+              sh """
             curl -X POST -H 'Content-type: application/json' \
-            --data '{\"text\":\"❌ Pipeline FAILED for ${APP_NAME}\"}' \
+            --data '{"text": "❌ Pipeline FAILED for ${APP_NAME}"}' \
             ${SLACK_WEBHOOK}
-            """
+        """
         }
     }
 }
