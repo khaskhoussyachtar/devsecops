@@ -53,8 +53,8 @@ pipeline {
                             -Dsonar.projectKey=devsecops \
                             -Dsonar.host.url=http://192.168.56.10:9000 \
                             -Dsonar.login=$SONAR_TOKEN \
-                            -Dsonar.coverage.exclusions=**/* \ 
-                            || true                                                                                                                   
+                            -Dsonar.coverage.exclusions=**/* 
+                                                                                                                                         
                     '''
                 }
             }
@@ -91,30 +91,30 @@ pipeline {
             post { always { archiveArtifacts artifacts: 'trivy-image-report.txt', allowEmptyArchive: true } }
         }
 
-        stage('Deploy to Nexus') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASS'
-                )]) {
-                    sh '''
-                        cat > settings-temp.xml <<EOF
-<settings>
-  <servers>
-    <server>
-      <id>nexus-releases</id>
-      <username>${NEXUS_USER}</username>
-      <password>${NEXUS_PASS}</password>
-    </server>
-  </servers>
-</settings>
-EOF
-                        mvn deploy -DskipTests -s settings-temp.xml
-                    '''
-                }
-            }
-        }
+//         stage('Deploy to Nexus') {
+//             steps {
+//                 withCredentials([usernamePassword(
+//                     credentialsId: 'nexus-credentials',
+//                     usernameVariable: 'NEXUS_USER',
+//                     passwordVariable: 'NEXUS_PASS'
+//                 )]) {
+//                     sh '''
+//                         cat > settings-temp.xml <<EOF
+// <settings>
+//   <servers>
+//     <server>
+//       <id>nexus-releases</id>
+//       <username>${NEXUS_USER}</username>
+//       <password>${NEXUS_PASS}</password>
+//     </server>
+//   </servers>
+// </settings>
+// EOF
+//                         mvn deploy -DskipTests -s settings-temp.xml
+//                     '''
+//                 }
+//             }
+//         }
 
         stage('Run Container') {
             steps {
@@ -125,17 +125,38 @@ EOF
             }
         }
 
-        stage('DAST Scan (OWASP ZAP)') {
+        // stage('DAST Scan (OWASP ZAP)') {
+        //     steps {
+        //         sh '''
+        //             echo "🧪 Running OWASP ZAP Baseline Scan..."
+        //             docker run --rm -v $(pwd):/zap/wrk/:rw owasp/zap2docker-stable zap-baseline.py \
+        //                 -t http://192.168.56.10:${APP_PORT} \
+        //                 -r zap-report.html || true
+        //             echo "✅ OWASP ZAP scan completed (report generated)"
+        //         '''
+        //     }
+        //     post { always { archiveArtifacts artifacts: 'zap-report.html', allowEmptyArchive: true } }
+        // }
+
+
+        stage("DAST Scan with OWASP ZAP") {
             steps {
-                sh '''
-                    echo "🧪 Running OWASP ZAP Baseline Scan..."
-                    docker run --rm -v $(pwd):/zap/wrk/:rw owasp/zap2docker-stable zap-baseline.py \
-                        -t http://192.168.56.10:${APP_PORT} \
-                        -r zap-report.html || true
-                    echo "✅ OWASP ZAP scan completed (report generated)"
-                '''
-            }
-            post { always { archiveArtifacts artifacts: 'zap-report.html', allowEmptyArchive: true } }
+                script {
+                    echo '🔍 Running OWASP ZAP baseline scan...'
+
+                    // Run ZAP but ignore exit code
+                    def exitCode = sh(script: '''
+                        docker run --rm --user root --network host -v $(pwd):/zap/wrk:rw \
+                        -t zaproxy/zap-stable zap-baseline.py \
+                        -t http://localhost \
+                        -r zap_report.html -J zap_report.json
+                    ''', returnStatus: true)
+
+                    echo "ZAP scan finished with exit code: ${exitCode}"
+
+                    // Read the JSON report if it exists
+            
+
         }
 
         stage('Prometheus Metrics Check (Optional)') {
