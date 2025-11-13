@@ -118,8 +118,8 @@ EOF
         stage('Run Container') {
             steps {
                 sh '''
-                    docker rm -f ${APP_NAME} 2>/dev/null || true
-                    docker run -d --name ${APP_NAME} -p ${APP_PORT}:${CONTAINER_PORT} ${IMAGE_TAG}
+                    docker rm -f devsecops-springboot 2>/dev/null || true
+                    docker run -d --name devsecops-springboot -p ${APP_PORT}:${CONTAINER_PORT} ${IMAGE_TAG}
                 '''
             }
         }
