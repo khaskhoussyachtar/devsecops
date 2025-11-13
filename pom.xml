@@ -92,60 +92,6 @@
 
         
 
-        <!-- Vulnerable dependencies for pipeline testing -->
-
-        <dependency>
-
-            <groupId>commons-collections</groupId>
-
-            <artifactId>commons-collections</artifactId>
-
-            <version>3.1</version> <!-- Known for serialization vulnerabilities -->
-
-        </dependency>
-
-        
-
-        <dependency>
-
-            <groupId>com.fasterxml.jackson.core</groupId>
-
-            <artifactId>jackson-databind</artifactId>
-
-            <version>2.9.10.1</version> <!-- Known for deserialization vulnerabilities -->
-
-        </dependency>
-
-        <dependency>
-
-            <groupId>org.yaml</groupId>
-
-            <artifactId>snakeyaml</artifactId>
-
-            <version>1.26</version> <!-- Contains snakeyaml vulnerabilities -->
-
-        </dependency>
-
-        <dependency>
-
-            <groupId>org.apache.struts</groupId>
-
-            <artifactId>struts2-core</artifactId>
-
-            <version>2.3.20</version> <!-- Known for remote code execution vulnerabilities -->
-
-        </dependency>
-
-        <dependency>
-
-            <groupId>com.google.guava</groupId>
-
-            <artifactId>guava</artifactId>
-
-            <version>11.0.2</version> <!-- Older version with known issues -->
-
-        </dependency>
-
     </dependencies>
 
     <build>
