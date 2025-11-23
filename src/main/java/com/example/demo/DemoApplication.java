@@ -7,12 +7,11 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
 public class DemoApplication extends SpringBootServletInitializer {
-
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
 		return application.sources(DemoApplication.class);
 	}
-
+   //test//
 	public static void main(String[] args) {
 		SpringApplication.run(DemoApplication.class, args);
 	}
